@@ -17,6 +17,7 @@ type Lang = "en" | "hi";
 type Payout = "upi" | "bank";
 type ConfidenceStatus = "extracted" | "unclear" | "missing";
 type RequiredTicketField = "pnr" | "trainNumber" | "date" | "origin" | "destination" | "fare";
+type AnalysisState = "idle" | "reading" | "done" | "fallback" | "rejected";
 
 type TicketData = {
   pnr: string;
@@ -32,6 +33,9 @@ type TicketData = {
 };
 
 type ExtractedTicketPayload = {
+  documentType?: "prs_counter_ticket" | "not_ticket" | "unclear";
+  documentConfidence?: "high" | "medium" | "low";
+  documentNotes?: string;
   pnr?: string | null;
   trainNumber?: string | null;
   trainName?: string | null;
@@ -48,7 +52,7 @@ const ticket: TicketData = {
   pnr: "2468135790",
   trainNumber: "12424",
   trainName: "Rajdhani Express",
-  date: "24 Aug 2026",
+  date: "2026-08-24",
   origin: "New Delhi",
   destination: "Dibrugarh",
   passengers: 2,
@@ -170,11 +174,23 @@ function StatusPill({ status }: { status: "extracted" | "unclear" | "missing" })
   return <span className={`status-pill ${status}`}>{status === "extracted" && <Icon name="check" size={12} />}{label}</span>;
 }
 
-function Field({ label, value, status = "extracted", editable = false, onChange }: { label: string; value: string; status?: "extracted" | "unclear" | "missing"; editable?: boolean; onChange?: (value: string) => void }) {
+function Field({ label, value, status = "extracted", onChange, type = "text", inputMode, maxLength, placeholder, hint, error }: {
+  label: string;
+  value: string;
+  status?: ConfidenceStatus;
+  onChange: (value: string) => void;
+  type?: "text" | "date" | "number";
+  inputMode?: "text" | "numeric" | "decimal";
+  maxLength?: number;
+  placeholder?: string;
+  hint?: string;
+  error?: string;
+}) {
   return (
-    <label className={`data-field ${status}`}>
+    <label className={`data-field ${status} ${error ? "has-error" : ""}`}>
       <span className="field-label">{label}<StatusPill status={status} /></span>
-      {editable ? <input aria-label={label} value={value} onChange={(event) => onChange?.(event.target.value)} /> : <strong>{value}</strong>}
+      <input aria-label={label} type={type} inputMode={inputMode} maxLength={maxLength} placeholder={placeholder} value={value} onChange={(event) => onChange(event.target.value)} />
+      {(error || hint) && <small className={error ? "field-error" : "field-hint"}>{error ?? hint}</small>}
     </label>
   );
 }
@@ -205,6 +221,25 @@ async function optimiseTicketUpload(file: File) {
   return new File([compressed], "ticket-upload.jpg", { type: "image/jpeg", lastModified: Date.now() });
 }
 
+function normaliseJourneyDate(value: string | null | undefined) {
+  if (typeof value !== "string") return "";
+  const cleaned = value.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(cleaned)) return cleaned;
+  const parsed = new Date(cleaned);
+  return Number.isNaN(parsed.getTime()) ? "" : parsed.toISOString().slice(0, 10);
+}
+
+function isValidJourneyDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const parsed = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+}
+
+function formatJourneyDate(value: string) {
+  if (!isValidJourneyDate(value)) return value || "Journey date";
+  return new Intl.DateTimeFormat("en-IN", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${value}T00:00:00Z`));
+}
+
 function normaliseExtractedTicket(raw: ExtractedTicketPayload): TicketData {
   const text = (value: string | null | undefined) => typeof value === "string" ? value.trim() : "";
   const numeric = (value: number | null | undefined) => typeof value === "number" && Number.isFinite(value) ? value : 0;
@@ -212,7 +247,7 @@ function normaliseExtractedTicket(raw: ExtractedTicketPayload): TicketData {
     pnr: text(raw.pnr),
     trainNumber: text(raw.trainNumber),
     trainName: text(raw.trainName),
-    date: text(raw.date),
+    date: normaliseJourneyDate(raw.date),
     origin: text(raw.origin),
     destination: text(raw.destination),
     passengers: Math.max(0, Math.round(numeric(raw.passengers))),
@@ -241,8 +276,10 @@ export default function TicketWapas() {
   const [lang, setLang] = useState<Lang>("en");
   const [scenario, setScenario] = useState<ScenarioKey>("happy");
   const [demoOpen, setDemoOpen] = useState(false);
-  const [analysis, setAnalysis] = useState<"idle" | "reading" | "done" | "fallback">("idle");
+  const [analysis, setAnalysis] = useState<AnalysisState>("idle");
+  const [captureMessage, setCaptureMessage] = useState("");
   const [ticketData, setTicketData] = useState(ticket);
+  const [ticketConfirmed, setTicketConfirmed] = useState(false);
   const [manualTrain, setManualTrain] = useState("12424");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [payout, setPayout] = useState<Payout>("upi");
@@ -262,10 +299,18 @@ export default function TicketWapas() {
   }), [manualTrain, scenario, ticketData.confidence]);
   const confidentFieldCount = Object.values(effectiveConfidence).filter((status) => status === "extracted").length;
   const effectiveTrainNumber = scenario === "unreadable" ? manualTrain : ticketData.trainNumber;
+  const fieldErrors: Partial<Record<RequiredTicketField, string>> = {
+    ...(!/^\d{10}$/.test(ticketData.pnr) ? { pnr: "Enter the 10-digit PNR printed on the ticket." } : {}),
+    ...(!/^\d{5}$/.test(effectiveTrainNumber) ? { trainNumber: "Enter the 5-digit train number." } : {}),
+    ...(!isValidJourneyDate(ticketData.date) ? { date: "Choose the journey date in DD/MM/YYYY format." } : {}),
+    ...(ticketData.origin.trim().length < 2 ? { origin: "Enter the boarding station name or code." } : {}),
+    ...(ticketData.destination.trim().length < 2 ? { destination: "Enter the destination station name or code." } : {}),
+    ...(!(ticketData.fare > 0) ? { fare: "Enter the fare printed on the ticket." } : {}),
+  };
   const requiredFieldsReady =
     /^\d{10}$/.test(ticketData.pnr) &&
     /^\d{5}$/.test(effectiveTrainNumber) &&
-    ticketData.date.trim().length >= 3 &&
+    isValidJourneyDate(ticketData.date) &&
     ticketData.origin.trim().length >= 2 &&
     ticketData.destination.trim().length >= 2 &&
     ticketData.fare > 0 &&
@@ -289,7 +334,9 @@ export default function TicketWapas() {
     setScenario(nextScenario);
     setScreen("home");
     setAnalysis("idle");
+    setCaptureMessage("");
     setTicketData(ticket);
+    setTicketConfirmed(false);
     setManualTrain(nextScenario === "unreadable" ? "" : "12424");
     setOtp(["", "", "", "", "", ""]);
     setPayout("upi");
@@ -310,6 +357,9 @@ export default function TicketWapas() {
 
   function runSample() {
     setAnalysis("reading");
+    setCaptureMessage("");
+    setTicketConfirmed(false);
+    setTicketData(ticket);
     window.setTimeout(() => {
       setAnalysis("done");
       go("details");
@@ -319,19 +369,28 @@ export default function TicketWapas() {
   function startManualEntry() {
     setTicketData(emptyTicket);
     setManualTrain("");
+    setTicketConfirmed(false);
+    setCaptureMessage("");
     go("details");
   }
 
   function updateTicketField(field: RequiredTicketField, value: string) {
-    const cleaned = value.trimStart();
+    const cleaned = field === "pnr"
+      ? value.replace(/\D/g, "").slice(0, 10)
+      : field === "trainNumber"
+        ? value.replace(/\D/g, "").slice(0, 5)
+        : value.trimStart();
     const numericFare = field === "fare" ? Number(cleaned.replace(/[^0-9.]/g, "")) : 0;
     const isValid = field === "pnr"
       ? /^\d{10}$/.test(cleaned)
       : field === "trainNumber"
         ? /^\d{5}$/.test(cleaned)
-        : field === "fare"
+        : field === "date"
+          ? isValidJourneyDate(cleaned)
+          : field === "fare"
           ? Number.isFinite(numericFare) && numericFare > 0
-          : cleaned.trim().length >= (field === "date" ? 3 : 2);
+          : cleaned.trim().length >= 2;
+    setTicketConfirmed(false);
     setTicketData((current) => ({
       ...current,
       [field]: field === "fare" ? (Number.isFinite(numericFare) ? numericFare : 0) : cleaned,
@@ -339,23 +398,65 @@ export default function TicketWapas() {
     }));
   }
 
+  function updateOptionalTicketField(field: "trainName" | "passengers", value: string) {
+    setTicketConfirmed(false);
+    setTicketData((current) => ({
+      ...current,
+      [field]: field === "passengers" ? Math.max(0, Math.min(12, Number(value.replace(/\D/g, "")) || 0)) : value.trimStart(),
+    }));
+  }
+
+  function updateTrainNumber(value: string) {
+    if (scenario === "unreadable") {
+      setManualTrain(value.replace(/\D/g, "").slice(0, 5));
+      setTicketConfirmed(false);
+      return;
+    }
+    updateTicketField("trainNumber", value);
+  }
+
   async function handleFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
+    event.target.value = "";
+    setCaptureMessage("");
+    setTicketConfirmed(false);
+    if (!new Set(["image/jpeg", "image/png", "image/webp"]).has(file.type)) {
+      setAnalysis("fallback");
+      setCaptureMessage("Choose a JPG, PNG or WEBP image of a synthetic PRS counter ticket.");
+      return;
+    }
+    if (file.size === 0 || file.size > 5 * 1024 * 1024) {
+      setAnalysis("fallback");
+      setCaptureMessage("The image must be smaller than 5 MB. Try a lower-resolution photo.");
+      return;
+    }
     setAnalysis("reading");
     try {
       const form = new FormData();
       form.set("ticket", await optimiseTicketUpload(file));
       const response = await fetch("/api/extract-ticket", { method: "POST", body: form });
-      if (!response.ok) throw new Error("reader unavailable");
-      const data = (await response.json()) as { ticket?: ExtractedTicketPayload };
-      setTicketData(normaliseExtractedTicket(data.ticket ?? {}));
+      const data = (await response.json().catch(() => ({}))) as { code?: string; message?: string; ticket?: ExtractedTicketPayload };
+      if (!response.ok) {
+        const rejected = response.status === 422 || data.code === "NOT_COUNTER_TICKET" || data.code === "TICKET_UNCLEAR";
+        setAnalysis(rejected ? "rejected" : "fallback");
+        setCaptureMessage(data.message ?? (rejected
+          ? "This does not look like a readable PRS counter ticket."
+          : "The ticket reader is temporarily unavailable. Try again or enter the details manually."));
+        return;
+      }
+      if (data.ticket?.documentType !== "prs_counter_ticket") {
+        setAnalysis("rejected");
+        setCaptureMessage("This image does not look like a PRS counter ticket. Upload a clear synthetic counter-ticket image.");
+        return;
+      }
+      setTicketData(normaliseExtractedTicket(data.ticket));
       setAnalysis("done");
+      window.setTimeout(() => go("details"), 500);
     } catch {
-      setTicketData(emptyTicket);
       setAnalysis("fallback");
+      setCaptureMessage("We could not reach the ticket reader. Check your connection, try again or enter the details manually.");
     }
-    window.setTimeout(() => go("details"), 500);
   }
 
   function chooseScenario(key: ScenarioKey) {
@@ -402,7 +503,7 @@ export default function TicketWapas() {
         </aside>
 
         <section className="app-frame" aria-live="polite">
-          <div className="prototype-ribbon"><Icon name="info" size={14} /> {c.demo}</div>
+          <div className="prototype-ribbon"><Icon name="info" size={14} /> Independent prototype · Synthetic data only · No real refund</div>
           {screen !== "home" && (
             <div className="progress-wrap">
               <button className="back-button" onClick={back}><Icon name="back" size={18} />{c.back}</button>
@@ -432,15 +533,23 @@ export default function TicketWapas() {
 
           {screen === "capture" && (
             <div className="screen">
-              <div className="screen-heading"><p className="eyebrow">ADD YOUR TICKET</p><h1>Let’s read the journey details.</h1><p>Take a clear photo of the full counter ticket. You will confirm everything before we check eligibility.</p></div>
+              <div className="screen-heading"><p className="eyebrow">ADD A SYNTHETIC TICKET</p><h1>Let’s read the journey details.</h1><p>Use a clear photo of the full PRS counter ticket. For this prototype, do not upload a real passenger ticket.</p></div>
+              <div className="safety-banner"><Icon name="shield" size={19} /><span><b>Synthetic tickets only</b>This demo sends the image for one-time reading, does not store it, and never contacts a government system.</span></div>
               <input ref={fileRef} className="file-input-hidden" tabIndex={-1} aria-hidden="true" type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFile} />
               <button className="upload-zone" onClick={() => fileRef.current?.click()} disabled={analysis === "reading"} aria-busy={analysis === "reading"}>
                 <span className="upload-icon"><Icon name={analysis === "reading" ? "sparkle" : "camera"} size={28} /></span>
                 <strong>{analysis === "reading" ? "Reading ticket…" : "Take photo or upload"}</strong>
-                <small>JPG, PNG or WEBP · up to 5 MB</small>
+                <small>JPG, PNG or WEBP · up to 5 MB · compressed on your device</small>
                 {analysis === "reading" && <span className="scan-line" />}
               </button>
-              {analysis === "fallback" && <div className="inline-notice"><Icon name="info" /><p><b>We could not read this image automatically.</b>Continue by completing the marked fields manually.</p></div>}
+              {(analysis === "fallback" || analysis === "rejected") && (
+                <div className={`capture-error ${analysis}`} role="alert">
+                  <span><Icon name={analysis === "rejected" ? "alert" : "info"} size={24} /></span>
+                  <div><b>{analysis === "rejected" ? "This does not look like a counter ticket." : "We could not read the ticket."}</b><p>{captureMessage}</p></div>
+                  <button onClick={() => fileRef.current?.click()}>Try another image</button>
+                  <button onClick={startManualEntry}>Enter details manually</button>
+                </div>
+              )}
               <div className="or-divider"><span>or use the judge-ready sample</span></div>
               <div className="sample-row"><TicketStub faded /><div><span className="sample-badge">SYNTHETIC</span><b>Rajdhani · NDLS → DBRT</b><small>PNR 2468135790</small></div></div>
               <BottomActions>
@@ -452,19 +561,22 @@ export default function TicketWapas() {
 
           {screen === "details" && (
             <div className="screen">
-              <div className="screen-heading"><p className="eyebrow">CONFIRM TICKET</p><h1>{confidentFieldCount === 0 ? "Enter your ticket details." : "We found these details."}</h1><p>Complete every marked journey field carefully. They determine the cancellation lookup.</p></div>
-              <div className="reader-summary"><span className="reader-icon"><Icon name="sparkle" /></span><div><b>{confidentFieldCount === 6 ? "All 6 key fields are ready" : `${confidentFieldCount} of 6 key fields are ready`}</b><p>AI only reads the ticket. It does not decide eligibility.</p></div></div>
+              <div className="screen-heading"><p className="eyebrow">CHECK AND CORRECT</p><h1>{confidentFieldCount === 0 ? "Enter your ticket details." : "Check every detail before continuing."}</h1><p>AI can make mistakes. Compare these values with the printed ticket and edit anything that is wrong.</p></div>
+              <div className="reader-summary"><span className="reader-icon"><Icon name="sparkle" /></span><div><b>{confidentFieldCount === 6 ? "All 6 required fields were read" : `${confidentFieldCount} of 6 required fields were read`}</b><p>Every field is editable. AI reads the ticket; fixed rules decide eligibility.</p></div></div>
               <div className="field-grid">
-                <Field label="PNR" value={ticketData.pnr} status={effectiveConfidence.pnr} editable={effectiveConfidence.pnr !== "extracted"} onChange={(value) => updateTicketField("pnr", value)} />
-                <Field label="TRAIN NUMBER" value={effectiveTrainNumber} status={effectiveConfidence.trainNumber} editable={effectiveConfidence.trainNumber !== "extracted"} onChange={(value) => scenario === "unreadable" ? setManualTrain(value.replace(/\D/g, "").slice(0, 5)) : updateTicketField("trainNumber", value)} />
-                <Field label="JOURNEY DATE" value={ticketData.date} status={effectiveConfidence.date} editable={effectiveConfidence.date !== "extracted"} onChange={(value) => updateTicketField("date", value)} />
-                <Field label="FROM" value={ticketData.origin} status={effectiveConfidence.origin} editable={effectiveConfidence.origin !== "extracted"} onChange={(value) => updateTicketField("origin", value)} />
-                <Field label="TO" value={ticketData.destination} status={effectiveConfidence.destination} editable={effectiveConfidence.destination !== "extracted"} onChange={(value) => updateTicketField("destination", value)} />
-                <Field label="TICKET FARE" value={ticketData.fare > 0 ? `₹${ticketData.fare.toLocaleString("en-IN")}` : ""} status={effectiveConfidence.fare} editable={effectiveConfidence.fare !== "extracted"} onChange={(value) => updateTicketField("fare", value)} />
+                <Field label="PNR" value={ticketData.pnr} status={effectiveConfidence.pnr} inputMode="numeric" maxLength={10} placeholder="10-digit PNR" error={fieldErrors.pnr} onChange={(value) => updateTicketField("pnr", value)} />
+                <Field label="TRAIN NUMBER" value={effectiveTrainNumber} status={effectiveConfidence.trainNumber} inputMode="numeric" maxLength={5} placeholder="5-digit train number" error={fieldErrors.trainNumber} onChange={updateTrainNumber} />
+                <Field label="JOURNEY DATE" value={ticketData.date} status={effectiveConfidence.date} type="date" error={fieldErrors.date} hint="DD/MM/YYYY" onChange={(value) => updateTicketField("date", value)} />
+                <Field label="FROM STATION" value={ticketData.origin} status={effectiveConfidence.origin} placeholder="e.g. New Delhi or NDLS" error={fieldErrors.origin} onChange={(value) => updateTicketField("origin", value)} />
+                <Field label="TO STATION" value={ticketData.destination} status={effectiveConfidence.destination} placeholder="e.g. Dibrugarh or DBRT" error={fieldErrors.destination} onChange={(value) => updateTicketField("destination", value)} />
+                <Field label="TICKET FARE (₹)" value={ticketData.fare > 0 ? String(ticketData.fare) : ""} status={effectiveConfidence.fare} type="number" inputMode="decimal" placeholder="Fare paid" error={fieldErrors.fare} onChange={(value) => updateTicketField("fare", value)} />
+                <Field label="TRAIN NAME (OPTIONAL)" value={ticketData.trainName} status={ticketData.trainName ? "extracted" : "missing"} placeholder="As printed on ticket" hint="Optional" onChange={(value) => updateOptionalTicketField("trainName", value)} />
+                <Field label="PASSENGERS (OPTIONAL)" value={ticketData.passengers > 0 ? String(ticketData.passengers) : ""} status={ticketData.passengers > 0 ? "extracted" : "missing"} type="number" inputMode="numeric" placeholder="Number of passengers" hint="Optional" onChange={(value) => updateOptionalTicketField("passengers", value)} />
               </div>
               {!requiredFieldsReady && <div className="inline-notice"><Icon name="alert" /><p><b>Complete the marked fields to continue.</b>Use the exact PNR, five-digit train number and journey details printed on the ticket.</p></div>}
+              <label className="confirmation-check"><input type="checkbox" checked={ticketConfirmed} disabled={!requiredFieldsReady} onChange={(event) => setTicketConfirmed(event.target.checked)} /><span><b>I checked the PNR, train number and journey date.</b><small>{requiredFieldsReady ? "These three values match the printed ticket." : "Complete the marked fields first."}</small></span></label>
               <div className="privacy-note"><Icon name="lock" size={18} /><span><b>Your ticket image is not stored.</b> Only confirmed fields move to the eligibility check.</span></div>
-              <BottomActions><button className="primary-button" onClick={() => go("eligibility")} disabled={!requiredFieldsReady}>Confirm & check cancellation<Icon name="arrow" /></button></BottomActions>
+              <BottomActions><button className="primary-button" onClick={() => go("eligibility")} disabled={!requiredFieldsReady || !ticketConfirmed}>Confirm & check cancellation<Icon name="arrow" /></button><button className="text-button" onClick={() => go("capture")}>Use a different ticket image</button></BottomActions>
             </div>
           )}
 
@@ -534,7 +646,8 @@ export default function TicketWapas() {
             <div className="screen">
               <div className="screen-heading"><p className="eyebrow">FINAL REVIEW</p><h1>Ready to start the refund.</h1><p>Nothing is paid until this final confirmation. Review the facts and consent below.</p></div>
               <div className="refund-total"><span><small>FULL REFUND</small><b>₹{ticketData.fare.toLocaleString("en-IN")}</b></span><span className="no-fee">₹0 fee</span></div>
-              <div className="review-list"><div><span>Ticket</span><b>PNR {ticketData.pnr}</b></div><div><span>Journey</span><b>{ticketData.origin} → {ticketData.destination}</b></div><div><span>Cancellation</span><b className="green-text"><Icon name="check" size={14} /> Railway verified</b></div><div><span>Ownership</span><b className="green-text"><Icon name="check" size={14} /> {scenario === "no-mobile" ? "Assisted approval" : "OTP verified"}</b></div><div><span>Payout</span><b>{payout === "upi" ? "asha.rail@okaxis" : "SBI · •••• 1842"}</b></div></div>
+              <div className="review-list"><div><span>Ticket</span><b>PNR {ticketData.pnr}</b></div><div><span>Journey</span><b>{ticketData.origin} → {ticketData.destination}</b></div><div><span>Journey date</span><b>{formatJourneyDate(ticketData.date)}</b></div><div><span>Cancellation</span><b className="green-text"><Icon name="check" size={14} /> Railway verified</b></div><div><span>Ownership</span><b className="green-text"><Icon name="check" size={14} /> {scenario === "no-mobile" ? "Assisted approval" : "OTP verified"}</b></div><div><span>Payout</span><b>{payout === "upi" ? "asha.rail@okaxis" : "SBI · •••• 1842"}</b></div></div>
+              <button className="edit-link" onClick={() => go("details")}><Icon name="back" size={16} /> Edit ticket details</button>
               <label className="consent-row"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span><b>I confirm these details are correct.</b><small>I consent to use these verified facts to create one refund claim for this journey.</small></span></label>
               <div className="lock-preview"><Icon name="lock" /><div><b>Duplicate lock activates first</b><p>The claim key is reserved before any payment call, so a double tap cannot create two refunds.</p></div></div>
               <BottomActions><button className="primary-button" disabled={!consent} onClick={() => go("tracking")}>Start ₹{ticketData.fare.toLocaleString("en-IN")} refund<Icon name="arrow" /></button></BottomActions>

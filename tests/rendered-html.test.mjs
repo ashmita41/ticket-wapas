@@ -15,6 +15,61 @@ const env = {
 };
 const context = { waitUntil() {}, passThroughOnException() {} };
 
+function extractedTicket(overrides = {}) {
+  return {
+    documentType: "prs_counter_ticket",
+    documentConfidence: "high",
+    documentNotes: "Visible synthetic PRS counter ticket layout and fields.",
+    pnr: "2468135790",
+    trainNumber: "12424",
+    trainName: "Rajdhani Express",
+    date: "2026-08-24",
+    origin: "New Delhi",
+    destination: "Dibrugarh",
+    passengers: 2,
+    fare: 4860,
+    mobile: null,
+    confidence: {
+      pnr: "extracted",
+      trainNumber: "extracted",
+      date: "extracted",
+      origin: "extracted",
+      destination: "extracted",
+      fare: "extracted",
+    },
+    ...overrides,
+  };
+}
+
+async function withMockOpenAI(output, callback) {
+  const originalKey = process.env.OPENAI_API_KEY;
+  const originalFetch = globalThis.fetch;
+  process.env.OPENAI_API_KEY = "test-server-only-key";
+  globalThis.fetch = async (input, init) => {
+    if (String(input).startsWith("https://api.openai.com/")) {
+      return Response.json({ output_text: JSON.stringify(output) });
+    }
+    return originalFetch(input, init);
+  };
+  try {
+    return await callback();
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalKey === undefined) delete process.env.OPENAI_API_KEY;
+    else process.env.OPENAI_API_KEY = originalKey;
+  }
+}
+
+function syntheticUpload(clientId) {
+  const form = new FormData();
+  form.set("ticket", new File(["synthetic-image"], "ticket.png", { type: "image/png" }));
+  return new Request("http://localhost/api/extract-ticket", {
+    method: "POST",
+    headers: { "x-forwarded-for": clientId },
+    body: form,
+  });
+}
+
 test("server-renders the Ticket Wapas prototype", async () => {
   const app = await worker();
   const response = await app.fetch(new Request("http://localhost/", { headers: { accept: "text/html" } }), env, context);
@@ -43,9 +98,14 @@ test("keeps secrets server-side and ships the social preview", async () => {
   assert.match(route, /process\.env\.OPENAI_API_KEY/);
   assert.match(route, /store:\s*false/);
   assert.match(route, /json_schema/);
+  assert.match(route, /NOT_COUNTER_TICKET/);
+  assert.match(route, /documentType/);
   assert.doesNotMatch(client, /OPENAI_API_KEY|Bearer sk-/);
   assert.match(client, /Duplicate safely blocked/i);
-  assert.match(client, /AI only reads the ticket/i);
+  assert.match(client, /AI reads the ticket/i);
+  assert.match(client, /type="date"/i);
+  assert.match(client, /I checked the PNR, train number and journey date/i);
+  assert.match(client, /Edit ticket details/i);
 });
 
 test("returns a safe manual fallback when AI extraction is not configured", async () => {
@@ -60,4 +120,67 @@ test("returns a safe manual fallback when AI extraction is not configured", asyn
     message: "Ticket reader is not configured. Continue with manual entry.",
   });
   assert.equal(response.headers.get("cache-control"), "no-store");
+});
+
+test("rejects an unrelated image instead of advancing the citizen journey", async () => {
+  const app = await worker();
+  const result = await withMockOpenAI(extractedTicket({
+    documentType: "not_ticket",
+    documentNotes: "A landscape image with no ticket.",
+    pnr: null,
+    trainNumber: null,
+    trainName: null,
+    date: null,
+    origin: null,
+    destination: null,
+    passengers: null,
+    fare: null,
+    confidence: {
+      pnr: "missing",
+      trainNumber: "missing",
+      date: "missing",
+      origin: "missing",
+      destination: "missing",
+      fare: "missing",
+    },
+  }), () => app.fetch(syntheticUpload("test-not-ticket"), env, context));
+
+  assert.equal(result.status, 422);
+  assert.deepEqual(await result.json(), {
+    code: "NOT_COUNTER_TICKET",
+    message: "This image does not look like a PRS counter ticket. Upload a clear synthetic counter-ticket image or enter the details manually.",
+  });
+});
+
+test("accepts a classified ticket only when enough visible ticket evidence is present", async () => {
+  const app = await worker();
+  const result = await withMockOpenAI(extractedTicket(), () => app.fetch(syntheticUpload("test-valid-ticket"), env, context));
+
+  assert.equal(result.status, 200);
+  const body = await result.json();
+  assert.equal(body.ticket.documentType, "prs_counter_ticket");
+  assert.equal(body.ticket.date, "2026-08-24");
+  assert.equal(body.stored, false);
+});
+
+test("abstains when a ticket classification has too little readable evidence", async () => {
+  const app = await worker();
+  const result = await withMockOpenAI(extractedTicket({
+    pnr: null,
+    trainNumber: null,
+    origin: null,
+    destination: null,
+    fare: null,
+    confidence: {
+      pnr: "missing",
+      trainNumber: "missing",
+      date: "extracted",
+      origin: "missing",
+      destination: "missing",
+      fare: "missing",
+    },
+  }), () => app.fetch(syntheticUpload("test-thin-evidence"), env, context));
+
+  assert.equal(result.status, 422);
+  assert.equal((await result.json()).code, "TICKET_UNCLEAR");
 });

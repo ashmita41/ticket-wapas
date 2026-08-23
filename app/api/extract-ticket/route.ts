@@ -9,6 +9,9 @@ const ticketSchema = {
   type: "object",
   additionalProperties: false,
   required: [
+    "documentType",
+    "documentConfidence",
+    "documentNotes",
     "pnr",
     "trainNumber",
     "trainName",
@@ -21,10 +24,17 @@ const ticketSchema = {
     "confidence",
   ],
   properties: {
+    documentType: {
+      type: "string",
+      enum: ["prs_counter_ticket", "not_ticket", "unclear"],
+      description: "Classify only a physical Indian Railways PRS counter ticket as prs_counter_ticket. E-tickets, screenshots, IDs, receipts and unrelated images are not_ticket.",
+    },
+    documentConfidence: { type: "string", enum: ["high", "medium", "low"] },
+    documentNotes: { type: "string", description: "One short reason for the classification, without personal data." },
     pnr: { type: ["string", "null"] },
     trainNumber: { type: ["string", "null"] },
     trainName: { type: ["string", "null"] },
-    date: { type: ["string", "null"], description: "Journey date as printed, in a readable format." },
+    date: { type: ["string", "null"], description: "Journey date in YYYY-MM-DD format. Return null if the complete date is not visible." },
     origin: { type: ["string", "null"] },
     destination: { type: ["string", "null"] },
     passengers: { type: ["integer", "null"] },
@@ -86,6 +96,29 @@ function readOutputText(payload: Record<string, unknown>) {
   return null;
 }
 
+type ParsedTicket = {
+  documentType?: "prs_counter_ticket" | "not_ticket" | "unclear";
+  documentConfidence?: "high" | "medium" | "low";
+  pnr?: string | null;
+  trainNumber?: string | null;
+  date?: string | null;
+  origin?: string | null;
+  destination?: string | null;
+  fare?: number | null;
+};
+
+function hasReadableTicketEvidence(ticket: ParsedTicket) {
+  if (ticket.documentType !== "prs_counter_ticket" || ticket.documentConfidence === "low") return false;
+  const anchors = [
+    typeof ticket.pnr === "string" && /^\d{10}$/.test(ticket.pnr.replace(/\D/g, "")),
+    typeof ticket.trainNumber === "string" && /^\d{5}$/.test(ticket.trainNumber.replace(/\D/g, "")),
+    typeof ticket.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(ticket.date),
+  ].filter(Boolean).length;
+  const supporting = [ticket.origin, ticket.destination].filter((value) => typeof value === "string" && value.trim().length >= 2).length +
+    (typeof ticket.fare === "number" && ticket.fare > 0 ? 1 : 0);
+  return anchors >= 1 && anchors + supporting >= 3;
+}
+
 export async function POST(request: Request) {
   if (isRateLimited(getClientId(request))) {
     return json({ code: "RATE_LIMITED", message: "Too many ticket reads. Please try again shortly." }, 429);
@@ -136,7 +169,7 @@ export async function POST(request: Request) {
           content: [
             {
               type: "input_text",
-              text: "Read this Indian railway PRS counter ticket. Extract only facts visibly printed on the ticket. Never infer a missing value. Mark every key field as extracted, unclear, or missing. Do not determine cancellation status, refund eligibility, identity, or refund amount.",
+              text: "First decide whether this image clearly shows a physical Indian Railways PRS counter ticket. E-tickets, phone screenshots, IDs, receipts, forms, scenery, people and unrelated images are not tickets. If it is not a PRS counter ticket, set documentType to not_ticket and leave every ticket field null. If the document type cannot be confirmed, set documentType to unclear and abstain. Only for a visible PRS counter ticket, extract facts visibly printed on it. Never infer a missing value. Return the journey date only as YYYY-MM-DD; otherwise return null. Mark every key field as extracted, unclear, or missing. Do not determine cancellation status, refund eligibility, identity or refund amount.",
             },
             { type: "input_image", image_url: dataUrl, detail: "high" },
           ],
@@ -174,7 +207,15 @@ export async function POST(request: Request) {
   }
 
   try {
-    const parsed = JSON.parse(outputText);
+    const parsed = JSON.parse(outputText) as ParsedTicket;
+    if (!hasReadableTicketEvidence(parsed)) {
+      return json({
+        code: parsed.documentType === "not_ticket" ? "NOT_COUNTER_TICKET" : "TICKET_UNCLEAR",
+        message: parsed.documentType === "not_ticket"
+          ? "This image does not look like a PRS counter ticket. Upload a clear synthetic counter-ticket image or enter the details manually."
+          : "We could not confirm a readable PRS counter ticket in this image. Try another synthetic image or enter the details manually.",
+      }, 422);
+    }
     return json({ ticket: parsed, source: "openai-structured-extraction", stored: false });
   } catch {
     return json({ code: "INVALID_RESULT", message: "Ticket fields could not be validated. Continue with manual entry." }, 502);

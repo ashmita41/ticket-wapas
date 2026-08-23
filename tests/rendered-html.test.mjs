@@ -81,6 +81,9 @@ test("server-renders the Ticket Wapas prototype", async () => {
   assert.match(html, /<title>Ticket Wapas/);
   assert.match(html, /The train was cancelled/);
   assert.match(html, /Start with a sample ticket/);
+  assert.match(html, /PUBLIC SERVICE PROTOTYPE/);
+  assert.match(html, /Independent project — not a government website/);
+  assert.match(html, /Cancelled PRS counter tickets/);
   assert.match(html, /synthetic data only/i);
   assert.match(html, /Not affiliated with or operated by Indian Railways or IRCTC/);
   assert.doesNotMatch(html, /Your site is taking shape|Building your site/);

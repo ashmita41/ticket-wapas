@@ -468,10 +468,14 @@ export default function TicketWapas() {
 
   return (
     <main className="site-shell">
+      <div className="service-strip">
+        <span>PUBLIC SERVICE PROTOTYPE · जन सेवा प्रोटोटाइप</span>
+        <b>Independent project — not a government website</b>
+      </div>
       <header className="topbar">
         <button className="brand-button" onClick={() => reset()} aria-label="Ticket Wapas home">
           <BrandMark />
-          <span className="brand-copy"><b>TICKET WAPAS</b><small>टिकट वापस</small></span>
+          <span className="brand-copy"><b>TICKET WAPAS</b><small>टिकट वापस · CITIZEN REFUND SERVICE</small></span>
         </button>
         <div className="header-actions">
           <button className="demo-trigger" onClick={() => setDemoOpen(true)}><span className={`scenario-dot ${scenarioMeta.tone}`} /> Demo: {scenarioMeta.title}</button>
@@ -484,8 +488,8 @@ export default function TicketWapas() {
 
       <div className="workspace">
         <aside className="story-panel">
-          <p className="eyebrow">BUILD WHAT MOVES INDIA · PROTOTYPE</p>
-          <h2>A missing digital bridge after a cancelled journey.</h2>
+          <p className="eyebrow">SERVICE OVERVIEW · सेवा की जानकारी</p>
+          <h2>Cancelled counter-ticket refund support, in one guided journey.</h2>
           <p className="story-lead">E-tickets can be refunded automatically. Counter-ticket passengers may still have to return to a PRS counter.</p>
           <div className="evidence-card">
             <span className="evidence-number">7.18 cr</span>
@@ -514,6 +518,11 @@ export default function TicketWapas() {
 
           {screen === "home" && (
             <div className="screen home-screen">
+              <div className="service-facts" aria-label="Service information">
+                <span><small>SERVICE FOR</small><b>Cancelled PRS counter tickets</b></span>
+                <span><small>ACCESS</small><b>No login required</b></span>
+                <span><small>STATUS</small><b>Prototype using mock systems</b></span>
+              </div>
               <div className="home-visual" aria-hidden="true">
                 <TicketStub />
                 <div className="refund-path"><span /><i /><i /><b><Icon name="check" size={22} /></b></div>
@@ -675,6 +684,12 @@ export default function TicketWapas() {
           )}
         </section>
       </div>
+
+      <footer className="site-footer">
+        <b>Ticket Wapas · टिकट वापस</b>
+        <span>Independent civic-tech prototype. Not affiliated with or operated by Indian Railways, IRCTC, or the Government of India.</span>
+        <span>No real tickets, identities, OTPs, payments, or government systems are used.</span>
+      </footer>
 
       {demoOpen && (
         <div className="modal-backdrop" role="presentation" onMouseDown={() => setDemoOpen(false)}>

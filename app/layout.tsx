@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Ticket Wapas",
-  description: "A Build What Moves India prototype.",
+  title: "Ticket Wapas — Citizen Refund Service Prototype",
+  description: "An independent public-service prototype for cancelled PRS counter-ticket refunds using synthetic data and mocked systems.",
   icons: { icon: "/favicon.svg" },
 };
 

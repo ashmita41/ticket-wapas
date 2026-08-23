@@ -47,12 +47,12 @@ Ticket Wapas is simpler because it keeps the citizen in one bilingual, mobile-fi
 | One clearly defined problem | Cancelled-journey refund for a physical PRS counter ticket | Meets |
 | Complete citizen journey | Capture → editable confirmation → eligibility → ownership → payout → editable final review → tracking | Meets |
 | Simpler than the current experience | One guided flow with plain-language decisions, visible progress and recovery at every input failure | Meets |
-| Indian users and mobile | English/Hindi entry experience; single-column phone forms; native date picker; large controls; manual fallback | Meets |
+| Indian users and mobile | Bilingual public-service header; single-column phone forms; native date picker; large controls; manual fallback | Meets |
 | Synthetic sensitive dependencies | Ticket, OTP, Railway status, identity and payment data are synthetic | Meets |
 | Meaningful Codex/OpenAI use | Codex-built product; server-side structured ticket extraction using an OpenAI model | Meets |
 | Working, not static | Six interactive scenarios complete or terminate safely; unrelated uploads are rejected without advancing | Meets |
 | Backend and process thinking | Deterministic rules, idempotency lock, state transitions, retry and audit references | Meets |
-| Honest limitations | Unofficial disclaimer and simulated/mock labels throughout | Meets |
+| Honest limitations | Government-service familiarity without official logos; persistent independent-prototype and mock-system labels | Meets |
 | No unsafe government-system access | No scraping, live government calls or undocumented APIs | Meets |
 | Public submission URL | Public Cloudflare deployment requiring no login or access request | Meets |
 | Two-minute video | Script is ready; recording still required | **Does not yet meet** |

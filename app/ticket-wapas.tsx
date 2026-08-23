@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, ReactNode, useEffect, useRef, useState } from "react";
 
 type Screen =
   | "home"
@@ -12,7 +12,6 @@ type Screen =
   | "review"
   | "tracking";
 
-type ScenarioKey = "happy" | "duplicate" | "operating" | "no-mobile" | "unreadable" | "payment-retry";
 type Lang = "en" | "hi";
 type Payout = "upi" | "bank";
 type ConfidenceStatus = "extracted" | "unclear" | "missing";
@@ -87,15 +86,6 @@ const emptyTicket: TicketData = {
     fare: "missing",
   },
 };
-
-const scenarios: Array<{ key: ScenarioKey; title: string; note: string; tone: string }> = [
-  { key: "happy", title: "Happy path", note: "Eligible → paid", tone: "mint" },
-  { key: "duplicate", title: "Duplicate claim", note: "Blocked safely", tone: "orange" },
-  { key: "operating", title: "Train operating", note: "Not eligible", tone: "sky" },
-  { key: "no-mobile", title: "No mobile", note: "Assisted route", tone: "violet" },
-  { key: "unreadable", title: "Unreadable ticket", note: "Manual rescue", tone: "rose" },
-  { key: "payment-retry", title: "Payment retry", note: "Safe recovery", tone: "sand" },
-];
 
 const screens: Screen[] = ["home", "capture", "details", "eligibility", "otp", "payout", "review", "tracking"];
 
@@ -274,13 +264,10 @@ function normaliseExtractedTicket(raw: ExtractedTicketPayload): TicketData {
 export default function TicketWapas() {
   const [screen, setScreen] = useState<Screen>("home");
   const [lang, setLang] = useState<Lang>("en");
-  const [scenario, setScenario] = useState<ScenarioKey>("happy");
-  const [demoOpen, setDemoOpen] = useState(false);
   const [analysis, setAnalysis] = useState<AnalysisState>("idle");
   const [captureMessage, setCaptureMessage] = useState("");
   const [ticketData, setTicketData] = useState(ticket);
   const [ticketConfirmed, setTicketConfirmed] = useState(false);
-  const [manualTrain, setManualTrain] = useState("12424");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [payout, setPayout] = useState<Payout>("upi");
   const [consent, setConsent] = useState(true);
@@ -290,15 +277,9 @@ export default function TicketWapas() {
   const c = dictionary[lang];
   const screenIndex = screens.indexOf(screen);
 
-  const scenarioMeta = useMemo(() => scenarios.find((item) => item.key === scenario)!, [scenario]);
-  const effectiveConfidence = useMemo(() => ({
-    ...ticketData.confidence,
-    trainNumber: scenario === "unreadable"
-      ? (manualTrain.length === 5 ? "extracted" as const : "unclear" as const)
-      : ticketData.confidence.trainNumber,
-  }), [manualTrain, scenario, ticketData.confidence]);
+  const effectiveConfidence = ticketData.confidence;
   const confidentFieldCount = Object.values(effectiveConfidence).filter((status) => status === "extracted").length;
-  const effectiveTrainNumber = scenario === "unreadable" ? manualTrain : ticketData.trainNumber;
+  const effectiveTrainNumber = ticketData.trainNumber;
   const fieldErrors: Partial<Record<RequiredTicketField, string>> = {
     ...(!/^\d{10}$/.test(ticketData.pnr) ? { pnr: "Enter the 10-digit PNR printed on the ticket." } : {}),
     ...(!/^\d{5}$/.test(effectiveTrainNumber) ? { trainNumber: "Enter the 5-digit train number." } : {}),
@@ -321,23 +302,12 @@ export default function TicketWapas() {
     document.documentElement.lang = lang === "hi" ? "hi" : "en";
   }, [lang]);
 
-  useEffect(() => {
-    if (!demoOpen) return;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setDemoOpen(false);
-    };
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [demoOpen]);
-
-  function reset(nextScenario = scenario) {
-    setScenario(nextScenario);
+  function reset() {
     setScreen("home");
     setAnalysis("idle");
     setCaptureMessage("");
     setTicketData(ticket);
     setTicketConfirmed(false);
-    setManualTrain(nextScenario === "unreadable" ? "" : "12424");
     setOtp(["", "", "", "", "", ""]);
     setPayout("upi");
     setConsent(true);
@@ -368,7 +338,6 @@ export default function TicketWapas() {
 
   function startManualEntry() {
     setTicketData(emptyTicket);
-    setManualTrain("");
     setTicketConfirmed(false);
     setCaptureMessage("");
     go("details");
@@ -404,15 +373,6 @@ export default function TicketWapas() {
       ...current,
       [field]: field === "passengers" ? Math.max(0, Math.min(12, Number(value.replace(/\D/g, "")) || 0)) : value.trimStart(),
     }));
-  }
-
-  function updateTrainNumber(value: string) {
-    if (scenario === "unreadable") {
-      setManualTrain(value.replace(/\D/g, "").slice(0, 5));
-      setTicketConfirmed(false);
-      return;
-    }
-    updateTicketField("trainNumber", value);
   }
 
   async function handleFile(event: ChangeEvent<HTMLInputElement>) {
@@ -459,13 +419,6 @@ export default function TicketWapas() {
     }
   }
 
-  function chooseScenario(key: ScenarioKey) {
-    reset(key);
-    setDemoOpen(false);
-  }
-
-  const eligibilityBlocked = scenario === "duplicate" || scenario === "operating";
-
   return (
     <main className="site-shell">
       <div className="service-strip">
@@ -478,7 +431,6 @@ export default function TicketWapas() {
           <span className="brand-copy"><b>TICKET WAPAS</b><small>टिकट वापस · CITIZEN REFUND SERVICE</small></span>
         </button>
         <div className="header-actions">
-          <button className="demo-trigger" onClick={() => setDemoOpen(true)}><span className={`scenario-dot ${scenarioMeta.tone}`} /> Demo: {scenarioMeta.title}</button>
           <div className="language-toggle" role="group" aria-label="Choose language">
             <button className={lang === "en" ? "active" : ""} onClick={() => setLang("en")}>EN</button>
             <button className={lang === "hi" ? "active" : ""} onClick={() => setLang("hi")}>हिं</button>
@@ -574,7 +526,7 @@ export default function TicketWapas() {
               <div className="reader-summary"><span className="reader-icon"><Icon name="sparkle" /></span><div><b>{confidentFieldCount === 6 ? "All 6 required fields were read" : `${confidentFieldCount} of 6 required fields were read`}</b><p>Every field is editable. AI reads the ticket; fixed rules decide eligibility.</p></div></div>
               <div className="field-grid">
                 <Field label="PNR" value={ticketData.pnr} status={effectiveConfidence.pnr} inputMode="numeric" maxLength={10} placeholder="10-digit PNR" error={fieldErrors.pnr} onChange={(value) => updateTicketField("pnr", value)} />
-                <Field label="TRAIN NUMBER" value={effectiveTrainNumber} status={effectiveConfidence.trainNumber} inputMode="numeric" maxLength={5} placeholder="5-digit train number" error={fieldErrors.trainNumber} onChange={updateTrainNumber} />
+                <Field label="TRAIN NUMBER" value={effectiveTrainNumber} status={effectiveConfidence.trainNumber} inputMode="numeric" maxLength={5} placeholder="5-digit train number" error={fieldErrors.trainNumber} onChange={(value) => updateTicketField("trainNumber", value)} />
                 <Field label="JOURNEY DATE" value={ticketData.date} status={effectiveConfidence.date} type="date" error={fieldErrors.date} hint="DD/MM/YYYY" onChange={(value) => updateTicketField("date", value)} />
                 <Field label="FROM STATION" value={ticketData.origin} status={effectiveConfidence.origin} placeholder="e.g. New Delhi or NDLS" error={fieldErrors.origin} onChange={(value) => updateTicketField("origin", value)} />
                 <Field label="TO STATION" value={ticketData.destination} status={effectiveConfidence.destination} placeholder="e.g. Dibrugarh or DBRT" error={fieldErrors.destination} onChange={(value) => updateTicketField("destination", value)} />
@@ -591,48 +543,27 @@ export default function TicketWapas() {
 
           {screen === "eligibility" && (
             <div className="screen">
-              <div className="screen-heading"><p className="eyebrow">LIVE RULE CHECK · SIMULATED</p><h1>{scenario === "duplicate" ? "A refund already exists." : scenario === "operating" ? "This train is still operating." : "Full refund is available."}</h1><p>{scenario === "duplicate" ? "We found the same PNR, journey date and claim type in the refund ledger." : scenario === "operating" ? "Railway cancellation status is required for this prototype flow." : "The ticket and cancellation record pass every required check."}</p></div>
-              {eligibilityBlocked ? (
-                <div className={`decision-card blocked ${scenario}`}>
-                  <span className="decision-icon"><Icon name={scenario === "duplicate" ? "shield" : "alert"} size={30} /></span>
-                  <div><small>{scenario === "duplicate" ? "DUPLICATE SAFELY BLOCKED" : "NOT ELIGIBLE FOR THIS FLOW"}</small><strong>{scenario === "duplicate" ? "Claim TW-824-613 is already processing" : `Train ${effectiveTrainNumber} is shown as operating`}</strong><p>{scenario === "duplicate" ? "No second payout was created. Track the original claim below." : "No refund instruction has been created. Check official cancellation rules for other cases."}</p></div>
-                </div>
-              ) : (
-                <div className="decision-card eligible"><span className="decision-icon"><Icon name="check" size={30} /></span><div><small>ELIGIBLE · 3 OF 3 CHECKS PASSED</small><strong>₹{ticketData.fare.toLocaleString("en-IN")} full fare</strong><p>No cancellation charge · {ticketData.passengers > 0 ? `${ticketData.passengers} passengers` : "passenger count verified by mock record"}</p></div></div>
-              )}
+              <div className="screen-heading"><p className="eyebrow">RULE CHECK · SIMULATED</p><h1>Full refund is available.</h1><p>The ticket and mocked cancellation record pass every required check.</p></div>
+              <div className="decision-card eligible"><span className="decision-icon"><Icon name="check" size={30} /></span><div><small>ELIGIBLE · 3 OF 3 CHECKS PASSED</small><strong>₹{ticketData.fare.toLocaleString("en-IN")} full fare</strong><p>No cancellation charge · {ticketData.passengers > 0 ? `${ticketData.passengers} passengers` : "passenger count verified by mock record"}</p></div></div>
               <div className="rule-list">
-                <div><span className={scenario === "operating" ? "rule-bad" : "rule-ok"}><Icon name={scenario === "operating" ? "close" : "check"} size={15} /></span><p><b>Train cancelled by Railways</b><small>{scenario === "operating" ? "No cancellation record found" : "Mock operations record · 23 Aug, 18:42"}</small></p></div>
+                <div><span className="rule-ok"><Icon name="check" size={15} /></span><p><b>Train cancelled by Railways</b><small>Mock operations record · 23 Aug, 18:42</small></p></div>
                 <div><span className="rule-ok"><Icon name="check" size={15} /></span><p><b>PRS counter ticket</b><small>Ticket channel verified</small></p></div>
-                <div><span className={scenario === "duplicate" ? "rule-bad" : "rule-ok"}><Icon name={scenario === "duplicate" ? "close" : "check"} size={15} /></span><p><b>No completed claim</b><small>{scenario === "duplicate" ? "Existing claim TW-824-613" : "Idempotency key is clear"}</small></p></div>
+                <div><span className="rule-ok"><Icon name="check" size={15} /></span><p><b>No completed claim</b><small>Idempotency key is clear</small></p></div>
               </div>
               <div className="plain-language"><b>Why this decision?</b><p>These are fixed product rules. AI was used only to read your ticket — never to approve or calculate the refund.</p></div>
-              <BottomActions>
-                {scenario === "duplicate" && <button className="primary-button" onClick={() => { setPaid(false); go("tracking"); }}>Track existing refund<Icon name="arrow" /></button>}
-                {scenario === "operating" && <button className="secondary-button" onClick={() => setDemoOpen(true)}>Try another demo scenario</button>}
-                {!eligibilityBlocked && <button className="primary-button" onClick={() => go("otp")}>Verify ticket ownership<Icon name="arrow" /></button>}
-              </BottomActions>
+              <BottomActions><button className="primary-button" onClick={() => go("otp")}>Verify ticket ownership<Icon name="arrow" /></button></BottomActions>
             </div>
           )}
 
           {screen === "otp" && (
             <div className="screen">
-              <div className="screen-heading"><p className="eyebrow">PROVE OWNERSHIP</p><h1>{scenario === "no-mobile" ? "No booking mobile found." : "Check the booking mobile."}</h1><p>{scenario === "no-mobile" ? "This ticket has no usable number, so OTP verification cannot be completed automatically." : <>A 6-digit code was sent to <b>+91 •••••• 2714</b>, the number captured when this ticket was booked.</>}</p></div>
-              {scenario === "no-mobile" ? (
-                <>
-                  <div className="exception-card"><span><Icon name="phone" size={28} /></span><div><small>ASSISTED VERIFICATION NEEDED</small><b>Keep the citizen in one journey</b><p>Route to a staffed review with ticket image, journey facts and a callback number — no station hunting.</p></div></div>
-                  <div className="assisted-list"><p><Icon name="check" size={16} /> Refund is not initiated yet</p><p><Icon name="check" size={16} /> Same duplicate lock still applies</p><p><Icon name="check" size={16} /> Human decision is recorded</p></div>
-                  <BottomActions><button className="primary-button" onClick={() => go("payout")}>Simulate assisted approval<Icon name="arrow" /></button></BottomActions>
-                </>
-              ) : (
-                <>
-                  <div className="otp-row" aria-label="One-time password">
-                    {otp.map((digit, index) => <input key={index} inputMode="numeric" maxLength={1} value={digit} aria-label={`OTP digit ${index + 1}`} onChange={(event) => { const copy = [...otp]; copy[index] = event.target.value.replace(/\D/g, ""); setOtp(copy); }} />)}
-                  </div>
-                  <div className="demo-code"><span><Icon name="sparkle" size={16} /> DEMO CODE</span><b>271406</b><button onClick={() => setOtp(["2", "7", "1", "4", "0", "6"])}>Fill code</button></div>
-                  <p className="attempt-note"><Icon name="shield" size={16} /> 3 attempts maximum · code expires in 10 minutes</p>
-                  <BottomActions><button className="primary-button" disabled={otp.join("") !== "271406"} onClick={() => go("payout")}>Verify code<Icon name="arrow" /></button></BottomActions>
-                </>
-              )}
+              <div className="screen-heading"><p className="eyebrow">PROVE OWNERSHIP</p><h1>Check the booking mobile.</h1><p>A 6-digit code was sent to <b>+91 •••••• 2714</b>, the number captured when this ticket was booked.</p></div>
+              <div className="otp-row" aria-label="One-time password">
+                {otp.map((digit, index) => <input key={index} inputMode="numeric" maxLength={1} value={digit} aria-label={`OTP digit ${index + 1}`} onChange={(event) => { const copy = [...otp]; copy[index] = event.target.value.replace(/\D/g, ""); setOtp(copy); }} />)}
+              </div>
+              <div className="demo-code"><span><Icon name="sparkle" size={16} /> DEMO CODE</span><b>271406</b><button onClick={() => setOtp(["2", "7", "1", "4", "0", "6"])}>Fill code</button></div>
+              <p className="attempt-note"><Icon name="shield" size={16} /> 3 attempts maximum · code expires in 10 minutes</p>
+              <BottomActions><button className="primary-button" disabled={otp.join("") !== "271406"} onClick={() => go("payout")}>Verify code<Icon name="arrow" /></button></BottomActions>
             </div>
           )}
 
@@ -655,7 +586,7 @@ export default function TicketWapas() {
             <div className="screen">
               <div className="screen-heading"><p className="eyebrow">FINAL REVIEW</p><h1>Ready to start the refund.</h1><p>Nothing is paid until this final confirmation. Review the facts and consent below.</p></div>
               <div className="refund-total"><span><small>FULL REFUND</small><b>₹{ticketData.fare.toLocaleString("en-IN")}</b></span><span className="no-fee">₹0 fee</span></div>
-              <div className="review-list"><div><span>Ticket</span><b>PNR {ticketData.pnr}</b></div><div><span>Journey</span><b>{ticketData.origin} → {ticketData.destination}</b></div><div><span>Journey date</span><b>{formatJourneyDate(ticketData.date)}</b></div><div><span>Cancellation</span><b className="green-text"><Icon name="check" size={14} /> Railway verified</b></div><div><span>Ownership</span><b className="green-text"><Icon name="check" size={14} /> {scenario === "no-mobile" ? "Assisted approval" : "OTP verified"}</b></div><div><span>Payout</span><b>{payout === "upi" ? "asha.rail@okaxis" : "SBI · •••• 1842"}</b></div></div>
+              <div className="review-list"><div><span>Ticket</span><b>PNR {ticketData.pnr}</b></div><div><span>Journey</span><b>{ticketData.origin} → {ticketData.destination}</b></div><div><span>Journey date</span><b>{formatJourneyDate(ticketData.date)}</b></div><div><span>Cancellation</span><b className="green-text"><Icon name="check" size={14} /> Railway verified</b></div><div><span>Ownership</span><b className="green-text"><Icon name="check" size={14} /> OTP verified</b></div><div><span>Payout</span><b>{payout === "upi" ? "asha.rail@okaxis" : "SBI · •••• 1842"}</b></div></div>
               <button className="edit-link" onClick={() => go("details")}><Icon name="back" size={16} /> Edit ticket details</button>
               <label className="consent-row"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span><b>I confirm these details are correct.</b><small>I consent to use these verified facts to create one refund claim for this journey.</small></span></label>
               <div className="lock-preview"><Icon name="lock" /><div><b>Duplicate lock activates first</b><p>The claim key is reserved before any payment call, so a double tap cannot create two refunds.</p></div></div>
@@ -665,20 +596,20 @@ export default function TicketWapas() {
 
           {screen === "tracking" && (
             <div className="screen tracking-screen">
-              <div className={`success-orbit ${paid ? "paid" : ""}`}><span><Icon name={scenario === "payment-retry" && !paid ? "refresh" : "check"} size={34} /></span></div>
+              <div className={`success-orbit ${paid ? "paid" : ""}`}><span><Icon name="check" size={34} /></span></div>
               <p className="eyebrow">CLAIM TW-824-613</p>
-              <h1>{scenario === "payment-retry" && !paid ? "Refund is safe. Payout needs a retry." : scenario === "duplicate" ? "Your refund is already in progress." : paid ? `₹${ticketData.fare.toLocaleString("en-IN")} has been paid.` : "Refund instruction created."}</h1>
-              <p className="hero-sub">{scenario === "payment-retry" && !paid ? "The gateway timed out after the claim was locked. No duplicate refund can be created." : paid ? "Sent to your verified payout destination. Keep this reference for your records." : "Your claim is locked against duplicates and ready for the payment rail."}</p>
-              <div className="tracking-amount"><small>REFUND AMOUNT</small><b>₹{ticketData.fare.toLocaleString("en-IN")}</b><span className={scenario === "payment-retry" && !paid ? "retry-state" : paid ? "paid-state" : "pending-state"}>{scenario === "payment-retry" && !paid ? "RETRY SCHEDULED" : paid ? "PAID" : "REFUND PENDING"}</span></div>
+              <h1>{paid ? `₹${ticketData.fare.toLocaleString("en-IN")} has been paid.` : "Refund instruction created."}</h1>
+              <p className="hero-sub">{paid ? "Sent to your verified payout destination. Keep this reference for your records." : "Your claim is locked against duplicates and ready for the payment rail."}</p>
+              <div className="tracking-amount"><small>REFUND AMOUNT</small><b>₹{ticketData.fare.toLocaleString("en-IN")}</b><span className={paid ? "paid-state" : "pending-state"}>{paid ? "PAID" : "REFUND PENDING"}</span></div>
               <div className="timeline">
                 <div className="complete"><i><Icon name="check" size={13} /></i><span><b>Claim locked</b><small>24 Aug · 10:41:08</small></span></div>
                 <div className="complete"><i><Icon name="check" size={13} /></i><span><b>Railway cancellation verified</b><small>24 Aug · 10:41:09</small></span></div>
-                <div className={paid ? "complete" : "current"}><i>{paid ? <Icon name="check" size={13} /> : <span />}</i><span><b>{scenario === "payment-retry" && !paid ? "Gateway retry queued" : paid ? "Paid to verified destination" : "Payment instruction ready"}</b><small>{paid ? "UTR 4268•••914" : scenario === "payment-retry" ? "Automatic retry in 14 min" : "Demo action available below"}</small></span></div>
+                <div className={paid ? "complete" : "current"}><i>{paid ? <Icon name="check" size={13} /> : <span />}</i><span><b>{paid ? "Paid to verified destination" : "Payment instruction ready"}</b><small>{paid ? "UTR 4268•••914" : "Mock payment action available below"}</small></span></div>
               </div>
               <div className="reference-row"><span>Idempotency key</span><code>{claimKey}</code></div>
               <BottomActions>
-                {!paid && scenario !== "duplicate" && <button className="primary-button" disabled={retrying} onClick={() => { setRetrying(true); window.setTimeout(() => { setPaid(true); setRetrying(false); }, 900); }}>{retrying ? "Confirming with gateway…" : scenario === "payment-retry" ? "Retry payout now" : "Simulate payment confirmation"}<Icon name={scenario === "payment-retry" ? "refresh" : "arrow"} /></button>}
-                <button className="secondary-button" onClick={() => reset()}>Start another demo</button>
+                {!paid && <button className="primary-button" disabled={retrying} onClick={() => { setRetrying(true); window.setTimeout(() => { setPaid(true); setRetrying(false); }, 900); }}>{retrying ? "Confirming with gateway…" : "Simulate payment confirmation"}<Icon name="arrow" /></button>}
+                <button className="secondary-button" onClick={() => reset()}>Start another ticket</button>
               </BottomActions>
             </div>
           )}
@@ -691,15 +622,6 @@ export default function TicketWapas() {
         <span>No real tickets, identities, OTPs, payments, or government systems are used.</span>
       </footer>
 
-      {demoOpen && (
-        <div className="modal-backdrop" role="presentation" onMouseDown={() => setDemoOpen(false)}>
-          <div className="demo-modal" role="dialog" aria-modal="true" aria-labelledby="demo-title" onMouseDown={(event) => event.stopPropagation()}>
-            <div className="modal-head"><div><p className="eyebrow">JUDGE CONTROLS</p><h2 id="demo-title">Test the real edge cases.</h2><p>Each scenario resets the prototype and changes the outcome deterministically.</p></div><button className="icon-button" onClick={() => setDemoOpen(false)} aria-label="Close"><Icon name="close" /></button></div>
-            <div className="scenario-grid">{scenarios.map((item) => <button key={item.key} className={scenario === item.key ? "active" : ""} onClick={() => chooseScenario(item.key)}><span className={`scenario-icon ${item.tone}`}><Icon name={item.key === "happy" ? "check" : item.key === "duplicate" ? "shield" : item.key === "payment-retry" ? "refresh" : item.key === "unreadable" ? "file" : item.key === "no-mobile" ? "phone" : "alert"} /></span><span><b>{item.title}</b><small>{item.note}</small></span>{scenario === item.key && <Icon name="check" size={17} />}</button>)}</div>
-            <p className="modal-foot"><Icon name="info" size={16} /> All railway, identity, OTP and payment responses are labelled simulations.</p>
-          </div>
-        </div>
-      )}
     </main>
   );
 }

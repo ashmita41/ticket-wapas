@@ -6,7 +6,7 @@ Ticket Wapas helps passengers who bought a physical PRS railway counter ticket a
 
 Our prototype turns that fragmented process into one guided mobile journey. The citizen uses a synthetic ticket image or enters its details manually. An OpenAI model first rejects unrelated images, then extracts only printed fields and marks anything unclear or missing. The citizen can edit every value and must confirm the critical identifiers; fixed product rules—not AI—then check a simulated Railway cancellation record, ticket type and duplicate-claim ledger. Ownership is verified using a mock OTP sent to the booking mobile, followed by a synthetic UPI or bank payout and an auditable refund tracker.
 
-The main journey works end to end, while six selectable scenarios demonstrate duplicate prevention, a train that is still operating, no booking mobile, an unreadable ticket and a payment-gateway retry. All tickets, railway responses, OTPs, identities and payments are synthetic and clearly labelled.
+The main citizen journey works end to end. Unrelated uploads are rejected without advancing, unreadable fields can be corrected manually, critical identifiers require citizen confirmation, and duplicate protection is visible before the mocked payout begins. All tickets, railway responses, OTPs, identities and payments are synthetic and clearly labelled.
 
 Ticket Wapas is simpler because it keeps the citizen in one bilingual, mobile-first flow; safer because eligibility is deterministic and claims are locked before payment; and more resilient because every automated step has an honest manual or assisted fallback.
 
@@ -25,7 +25,7 @@ Ticket Wapas is simpler because it keeps the citizen in one bilingual, mobile-fi
 
 - **1:00–1:14:** Explain the real gap: automatic e-ticket refunds versus a physical return journey for some counter-ticket cases.
 - **1:14–1:29:** Show the architecture: OpenAI structured ticket extraction, deterministic eligibility, ownership verification, claim lock, payment adapter and audit trail.
-- **1:29–1:42:** Open judge controls and quickly show duplicate blocking, unreadable-ticket correction and payment retry.
+- **1:29–1:42:** Return to ticket capture and show that an unrelated image is rejected without advancing, with clear retry and manual-entry choices.
 - **1:42–1:52:** Explain safety: synthetic data, no government APIs, no official branding, server-only API key and no stored ticket image.
 - **1:52–2:00:** “Ticket Wapas shows how a refund can move to the passenger, instead of making the passenger travel for the refund.”
 
@@ -50,7 +50,7 @@ Ticket Wapas is simpler because it keeps the citizen in one bilingual, mobile-fi
 | Indian users and mobile | Bilingual public-service header; single-column phone forms; native date picker; large controls; manual fallback | Meets |
 | Synthetic sensitive dependencies | Ticket, OTP, Railway status, identity and payment data are synthetic | Meets |
 | Meaningful Codex/OpenAI use | Codex-built product; server-side structured ticket extraction using an OpenAI model | Meets |
-| Working, not static | Six interactive scenarios complete or terminate safely; unrelated uploads are rejected without advancing | Meets |
+| Working, not static | The complete citizen flow works; unrelated uploads and invalid ticket fields stop safely with clear recovery | Meets |
 | Backend and process thinking | Deterministic rules, idempotency lock, state transitions, retry and audit references | Meets |
 | Honest limitations | Government-service familiarity without official logos; persistent independent-prototype and mock-system labels | Meets |
 | No unsafe government-system access | No scraping, live government calls or undocumented APIs | Meets |

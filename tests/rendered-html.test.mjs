@@ -104,11 +104,12 @@ test("keeps secrets server-side and ships the social preview", async () => {
   assert.match(route, /NOT_COUNTER_TICKET/);
   assert.match(route, /documentType/);
   assert.doesNotMatch(client, /OPENAI_API_KEY|Bearer sk-/);
-  assert.match(client, /Duplicate safely blocked/i);
+  assert.match(client, /Duplicate lock activates first/i);
   assert.match(client, /AI reads the ticket/i);
   assert.match(client, /type="date"/i);
   assert.match(client, /I checked the PNR, train number and journey date/i);
   assert.match(client, /Edit ticket details/i);
+  assert.doesNotMatch(client, /JUDGE CONTROLS|Test the real edge cases|Demo: Happy path/i);
 });
 
 test("returns a safe manual fallback when AI extraction is not configured", async () => {

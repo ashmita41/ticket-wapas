@@ -80,7 +80,8 @@ test("server-renders the Ticket Wapas prototype", async () => {
   const html = await response.text();
   assert.match(html, /<title>Ticket Wapas/);
   assert.match(html, /The train was cancelled/);
-  assert.match(html, /Start with a sample ticket/);
+  assert.match(html, /Check my refund/);
+  assert.match(html, /Before you begin/);
   assert.match(html, /PUBLIC SERVICE PROTOTYPE/);
   assert.match(html, /Independent project — not a government website/);
   assert.match(html, /Cancelled physical counter tickets/);
@@ -109,7 +110,12 @@ test("keeps secrets server-side and ships the social preview", async () => {
   assert.match(client, /type="date"/i);
   assert.match(client, /I checked the PNR, train number and journey date/i);
   assert.match(client, /Edit ticket details/i);
-  assert.doesNotMatch(client, /JUDGE CONTROLS|Test the real edge cases|Demo: Happy path/i);
+  assert.match(client, /I no longer have access to this number/i);
+  assert.match(client, /ASSISTED VERIFICATION · SIMULATED/i);
+  assert.match(client, /HELP REFERENCE TW-HELP-2714/i);
+  assert.match(client, /अब यह नंबर मेरे पास नहीं है/);
+  assert.match(client, /रिफंड शुरू करने के लिए तैयार/);
+  assert.doesNotMatch(client, /JUDGE CONTROLS|Test the real edge cases|Demo: Happy path|judge-ready/i);
   assert.doesNotMatch(client, /Idempotency key|tokenised|claim key|payment rail|Deterministic eligibility|fixed product rules|PNR \+ journey \+ claim type/i);
 });
 

@@ -8,7 +8,7 @@ Our prototype turns that fragmented process into one guided mobile journey. The 
 
 The main citizen journey works end to end. Unrelated uploads are rejected without advancing, unreadable fields can be corrected manually, critical identifiers require citizen confirmation, and duplicate protection is visible before the mocked payout begins. All tickets, railway responses, OTPs, identities and payments are synthetic and clearly labelled.
 
-Ticket Wapas is simpler because it keeps the citizen in one bilingual, mobile-first flow; safer because eligibility is deterministic and claims are locked before payment; and more resilient because every automated step has an honest manual or assisted fallback.
+Ticket Wapas is simpler because it keeps the citizen in one bilingual, mobile-first flow; safer because every critical detail is confirmed before the refund starts; and more resilient because failed or unclear ticket reading always has an honest manual path.
 
 ## Two-minute video script
 
@@ -16,10 +16,10 @@ Ticket Wapas is simpler because it keeps the citizen in one bilingual, mobile-fi
 
 - **0:00–0:08:** “I bought this ticket at a railway counter. My train was cancelled, but getting the refund can still mean returning to a PRS counter.”
 - **0:08–0:19:** Open Ticket Wapas and choose the synthetic sample ticket. Point out that the image is not stored.
-- **0:19–0:31:** Confirm the extracted PNR, train, date, route and fare. Say: “AI reads; rules decide.”
-- **0:31–0:42:** Show the simulated cancellation, counter-ticket and duplicate checks.
+- **0:19–0:31:** Check and correct the PNR, train, date, route and fare. Say: “The ticket reader fills the form, but the citizen confirms every important detail.”
+- **0:31–0:42:** Show the three plain-language eligibility checks and the clear refund result.
 - **0:42–0:51:** Fill the visible demo OTP and select the synthetic UPI destination.
-- **0:51–1:00:** Start the refund and simulate payment confirmation. End on the paid state, UTR and idempotency key.
+- **0:51–1:00:** Start the refund and complete the mock payment. End on the paid state and citizen-friendly payment reference.
 
 ### 1:00–2:00 — how and why
 

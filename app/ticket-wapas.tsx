@@ -93,10 +93,10 @@ const dictionary = {
   en: {
     strap: "COUNTER-TICKET REFUNDS, WITHOUT THE RETURN TRIP",
     hero: "The train was cancelled. Your refund journey should be too.",
-    sub: "Verify a cancelled counter ticket, prove ownership, and receive the refund digitally — without going back to a PRS counter.",
+    sub: "Check a cancelled counter ticket, confirm it belongs to you, and receive the refund digitally — without going back to the railway counter.",
     start: "Start with a sample ticket",
     manual: "Enter ticket manually",
-    proof: "Proof before payout",
+    proof: "Ownership checked before refund",
     demo: "Prototype — synthetic data only",
     back: "Back",
     continue: "Continue",
@@ -104,7 +104,7 @@ const dictionary = {
   hi: {
     strap: "काउंटर टिकट रिफंड, बिना स्टेशन लौटे",
     hero: "ट्रेन रद्द हुई है। रिफंड के लिए सफ़र क्यों?",
-    sub: "रद्द हुई काउंटर टिकट को जाँचें, मालिकाना साबित करें और रिफंड डिजिटल रूप से पाएँ — PRS काउंटर पर लौटे बिना।",
+    sub: "रद्द हुई काउंटर टिकट को जाँचें, मालिकाना साबित करें और रिफंड डिजिटल रूप से पाएँ — रेलवे काउंटर पर लौटे बिना।",
     start: "नमूना टिकट इस्तेमाल करें",
     manual: "टिकट की जानकारी भरें",
     proof: "भुगतान से पहले सत्यापन",
@@ -160,7 +160,7 @@ function TicketStub({ faded = false }: { faded?: boolean }) {
 }
 
 function StatusPill({ status }: { status: "extracted" | "unclear" | "missing" }) {
-  const label = status === "extracted" ? "EXTRACTED" : status === "unclear" ? "CHECK THIS" : "MISSING";
+  const label = status === "extracted" ? "FOUND" : status === "unclear" ? "CHECK THIS" : "NEEDED";
   return <span className={`status-pill ${status}`}>{status === "extracted" && <Icon name="check" size={12} />}{label}</span>;
 }
 
@@ -296,8 +296,6 @@ export default function TicketWapas() {
     ticketData.destination.trim().length >= 2 &&
     ticketData.fare > 0 &&
     Object.values(effectiveConfidence).every((status) => status === "extracted");
-  const claimKey = `${ticketData.pnr || "PNR"}-${ticketData.date.replace(/[^a-z0-9]/gi, "").toUpperCase() || "DATE"}-FTC`;
-
   useEffect(() => {
     document.documentElement.lang = lang === "hi" ? "hi" : "en";
   }, [lang]);
@@ -383,7 +381,7 @@ export default function TicketWapas() {
     setTicketConfirmed(false);
     if (!new Set(["image/jpeg", "image/png", "image/webp"]).has(file.type)) {
       setAnalysis("fallback");
-      setCaptureMessage("Choose a JPG, PNG or WEBP image of a synthetic PRS counter ticket.");
+      setCaptureMessage("Choose a JPG, PNG or WEBP image of a synthetic physical counter ticket.");
       return;
     }
     if (file.size === 0 || file.size > 5 * 1024 * 1024) {
@@ -401,13 +399,13 @@ export default function TicketWapas() {
         const rejected = response.status === 422 || data.code === "NOT_COUNTER_TICKET" || data.code === "TICKET_UNCLEAR";
         setAnalysis(rejected ? "rejected" : "fallback");
         setCaptureMessage(data.message ?? (rejected
-          ? "This does not look like a readable PRS counter ticket."
+          ? "This does not look like a readable physical counter ticket."
           : "The ticket reader is temporarily unavailable. Try again or enter the details manually."));
         return;
       }
       if (data.ticket?.documentType !== "prs_counter_ticket") {
         setAnalysis("rejected");
-        setCaptureMessage("This image does not look like a PRS counter ticket. Upload a clear synthetic counter-ticket image.");
+        setCaptureMessage("This image does not look like a physical railway counter ticket. Upload a clear synthetic counter-ticket image.");
         return;
       }
       setTicketData(normaliseExtractedTicket(data.ticket));
@@ -442,19 +440,19 @@ export default function TicketWapas() {
         <aside className="story-panel">
           <p className="eyebrow">SERVICE OVERVIEW · सेवा की जानकारी</p>
           <h2>Cancelled counter-ticket refund support, in one guided journey.</h2>
-          <p className="story-lead">E-tickets can be refunded automatically. Counter-ticket passengers may still have to return to a PRS counter.</p>
+          <p className="story-lead">E-tickets can be refunded automatically. Passengers with a physical counter ticket may still have to return to a railway counter.</p>
           <div className="evidence-card">
             <span className="evidence-number">7.18 cr</span>
             <p>counter tickets were booked from June 2025 to June 2026 — 11% of all reserved tickets.</p>
             <a href="https://www.pib.gov.in/PressReleasePage.aspx?PRID=2287719&lang=1&reg=48" target="_blank" rel="noreferrer">Ministry of Railways ↗</a>
           </div>
           <div className="promise-list">
-            <div><span><Icon name="shield" /></span><p><b>Deterministic eligibility</b>AI reads the ticket. Rules decide the refund.</p></div>
-            <div><span><Icon name="lock" /></span><p><b>One ticket, one claim</b>PNR + journey + claim type blocks duplicates.</p></div>
-            <div><span><Icon name="route" /></span><p><b>Designed for the exception</b>Manual rescue, assisted verification, safe retry.</p></div>
+            <div><span><Icon name="shield" /></span><p><b>A clear decision</b>See what was checked and why the ticket qualifies.</p></div>
+            <div><span><Icon name="lock" /></span><p><b>Protected from duplicate refunds</b>We check whether a refund already exists before starting another.</p></div>
+            <div><span><Icon name="route" /></span><p><b>Help when details are unclear</b>Correct any field or enter the ticket manually.</p></div>
           </div>
           <div className="state-strip" aria-label="Refund state model">
-            <span>DRAFT</span><i /> <span>VERIFY</span><i /> <span>LOCK</span><i /> <span>PAY</span>
+            <span>ADD TICKET</span><i /> <span>CHECK</span><i /> <span>CONFIRM</span><i /> <span>REFUND</span>
           </div>
         </aside>
 
@@ -471,7 +469,7 @@ export default function TicketWapas() {
           {screen === "home" && (
             <div className="screen home-screen">
               <div className="service-facts" aria-label="Service information">
-                <span><small>SERVICE FOR</small><b>Cancelled PRS counter tickets</b></span>
+                <span><small>SERVICE FOR</small><b>Cancelled physical counter tickets</b></span>
                 <span><small>ACCESS</small><b>No login required</b></span>
                 <span><small>STATUS</small><b>Prototype using mock systems</b></span>
               </div>
@@ -483,7 +481,7 @@ export default function TicketWapas() {
               <p className="eyebrow orange">{c.strap}</p>
               <h1>{c.hero}</h1>
               <p className="hero-sub">{c.sub}</p>
-              <div className="trust-line"><span><Icon name="shield" size={16} />{c.proof}</span><span><Icon name="lock" size={16} />No duplicate claims</span></div>
+              <div className="trust-line"><span><Icon name="shield" size={16} />{c.proof}</span><span><Icon name="lock" size={16} />Protected from duplicate refunds</span></div>
               <BottomActions>
                 <button className="primary-button" onClick={() => go("capture")}>{c.start}<Icon name="arrow" /></button>
                 <button className="text-button" onClick={startManualEntry}>{c.manual}<Icon name="arrow" size={17} /></button>
@@ -494,7 +492,7 @@ export default function TicketWapas() {
 
           {screen === "capture" && (
             <div className="screen">
-              <div className="screen-heading"><p className="eyebrow">ADD A SYNTHETIC TICKET</p><h1>Let’s read the journey details.</h1><p>Use a clear photo of the full PRS counter ticket. For this prototype, do not upload a real passenger ticket.</p></div>
+              <div className="screen-heading"><p className="eyebrow">ADD A SYNTHETIC TICKET</p><h1>Let’s read the journey details.</h1><p>Use a clear photo of the full physical counter ticket. For this prototype, do not upload a real passenger ticket.</p></div>
               <div className="safety-banner"><Icon name="shield" size={19} /><span><b>Synthetic tickets only</b>This demo sends the image for one-time reading, does not store it, and never contacts a government system.</span></div>
               <input ref={fileRef} className="file-input-hidden" tabIndex={-1} aria-hidden="true" type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFile} />
               <button className="upload-zone" onClick={() => fileRef.current?.click()} disabled={analysis === "reading"} aria-busy={analysis === "reading"}>
@@ -522,8 +520,8 @@ export default function TicketWapas() {
 
           {screen === "details" && (
             <div className="screen">
-              <div className="screen-heading"><p className="eyebrow">CHECK AND CORRECT</p><h1>{confidentFieldCount === 0 ? "Enter your ticket details." : "Check every detail before continuing."}</h1><p>AI can make mistakes. Compare these values with the printed ticket and edit anything that is wrong.</p></div>
-              <div className="reader-summary"><span className="reader-icon"><Icon name="sparkle" /></span><div><b>{confidentFieldCount === 6 ? "All 6 required fields were read" : `${confidentFieldCount} of 6 required fields were read`}</b><p>Every field is editable. AI reads the ticket; fixed rules decide eligibility.</p></div></div>
+              <div className="screen-heading"><p className="eyebrow">CHECK AND CORRECT</p><h1>{confidentFieldCount === 0 ? "Enter your ticket details." : "Check every detail before continuing."}</h1><p>The ticket reader can make mistakes. Compare these values with the printed ticket and edit anything that is wrong.</p></div>
+              <div className="reader-summary"><span className="reader-icon"><Icon name="sparkle" /></span><div><b>{confidentFieldCount === 6 ? "All 6 required details were found" : `${confidentFieldCount} of 6 required details were found`}</b><p>Every field is editable, and you stay in control.</p></div></div>
               <div className="field-grid">
                 <Field label="PNR" value={ticketData.pnr} status={effectiveConfidence.pnr} inputMode="numeric" maxLength={10} placeholder="10-digit PNR" error={fieldErrors.pnr} onChange={(value) => updateTicketField("pnr", value)} />
                 <Field label="TRAIN NUMBER" value={effectiveTrainNumber} status={effectiveConfidence.trainNumber} inputMode="numeric" maxLength={5} placeholder="5-digit train number" error={fieldErrors.trainNumber} onChange={(value) => updateTicketField("trainNumber", value)} />
@@ -543,14 +541,14 @@ export default function TicketWapas() {
 
           {screen === "eligibility" && (
             <div className="screen">
-              <div className="screen-heading"><p className="eyebrow">RULE CHECK · SIMULATED</p><h1>Full refund is available.</h1><p>The ticket and mocked cancellation record pass every required check.</p></div>
+              <div className="screen-heading"><p className="eyebrow">ELIGIBILITY CHECK · SIMULATED</p><h1>Full refund is available.</h1><p>Your confirmed ticket details match the mocked cancellation record.</p></div>
               <div className="decision-card eligible"><span className="decision-icon"><Icon name="check" size={30} /></span><div><small>ELIGIBLE · 3 OF 3 CHECKS PASSED</small><strong>₹{ticketData.fare.toLocaleString("en-IN")} full fare</strong><p>No cancellation charge · {ticketData.passengers > 0 ? `${ticketData.passengers} passengers` : "passenger count verified by mock record"}</p></div></div>
               <div className="rule-list">
-                <div><span className="rule-ok"><Icon name="check" size={15} /></span><p><b>Train cancelled by Railways</b><small>Mock operations record · 23 Aug, 18:42</small></p></div>
-                <div><span className="rule-ok"><Icon name="check" size={15} /></span><p><b>PRS counter ticket</b><small>Ticket channel verified</small></p></div>
-                <div><span className="rule-ok"><Icon name="check" size={15} /></span><p><b>No completed claim</b><small>Idempotency key is clear</small></p></div>
+                <div><span className="rule-ok"><Icon name="check" size={15} /></span><p><b>Train cancellation found</b><small>Mock cancellation record · 23 Aug, 18:42</small></p></div>
+                <div><span className="rule-ok"><Icon name="check" size={15} /></span><p><b>Physical counter ticket confirmed</b><small>The ticket type is eligible for this journey</small></p></div>
+                <div><span className="rule-ok"><Icon name="check" size={15} /></span><p><b>No earlier refund found</b><small>This ticket can continue</small></p></div>
               </div>
-              <div className="plain-language"><b>Why this decision?</b><p>These are fixed product rules. AI was used only to read your ticket — never to approve or calculate the refund.</p></div>
+              <div className="plain-language"><b>Why this decision?</b><p>The result uses the details you confirmed and a mocked cancellation record. The ticket reader does not approve or calculate the refund.</p></div>
               <BottomActions><button className="primary-button" onClick={() => go("otp")}>Verify ticket ownership<Icon name="arrow" /></button></BottomActions>
             </div>
           )}
@@ -569,15 +567,15 @@ export default function TicketWapas() {
 
           {screen === "payout" && (
             <div className="screen">
-              <div className="screen-heading"><p className="eyebrow">CHOOSE PAYOUT</p><h1>Where should ₹{ticketData.fare.toLocaleString("en-IN")} go?</h1><p>Choose a verified destination. This prototype uses masked, synthetic payment details.</p></div>
+              <div className="screen-heading"><p className="eyebrow">CHOOSE REFUND ACCOUNT</p><h1>Where should ₹{ticketData.fare.toLocaleString("en-IN")} go?</h1><p>Choose where you want to receive the refund. All details below are masked and synthetic.</p></div>
               <div className="method-tabs" role="tablist" aria-label="Refund destination"><button role="tab" aria-selected={payout === "upi"} className={payout === "upi" ? "active" : ""} onClick={() => setPayout("upi")}><Icon name="phone" />UPI</button><button role="tab" aria-selected={payout === "bank"} className={payout === "bank" ? "active" : ""} onClick={() => setPayout("bank")}><Icon name="wallet" />Bank account</button></div>
               {payout === "upi" ? (
                 <div className="payout-card selected"><span className="radio-dot" /><div><small>UPI ID</small><b>asha.rail@okaxis</b><p>Account name: Asha P.</p></div><span className="verified-badge"><Icon name="check" size={13} /> VERIFIED</span></div>
               ) : (
                 <div className="payout-card selected"><span className="radio-dot" /><div><small>BANK ACCOUNT</small><b>State Bank · •••• 1842</b><p>Account name: Asha P.</p></div><span className="verified-badge"><Icon name="check" size={13} /> VERIFIED</span></div>
               )}
-              <div className="recipient-check"><Icon name="shield" /><div><b>Recipient name matched</b><p>Booking contact and payout name pass the prototype match check.</p></div></div>
-              <div className="privacy-note"><Icon name="lock" size={18} /><span>Payment details are tokenised before the refund instruction is created.</span></div>
+              <div className="recipient-check"><Icon name="shield" /><div><b>Refund name checked</b><p>The name on the mock refund account matches the booking contact.</p></div></div>
+              <div className="privacy-note"><Icon name="lock" size={18} /><span>Only masked, synthetic payment details are used in this prototype.</span></div>
               <BottomActions><button className="primary-button" onClick={() => go("review")}>Review refund<Icon name="arrow" /></button></BottomActions>
             </div>
           )}
@@ -586,10 +584,10 @@ export default function TicketWapas() {
             <div className="screen">
               <div className="screen-heading"><p className="eyebrow">FINAL REVIEW</p><h1>Ready to start the refund.</h1><p>Nothing is paid until this final confirmation. Review the facts and consent below.</p></div>
               <div className="refund-total"><span><small>FULL REFUND</small><b>₹{ticketData.fare.toLocaleString("en-IN")}</b></span><span className="no-fee">₹0 fee</span></div>
-              <div className="review-list"><div><span>Ticket</span><b>PNR {ticketData.pnr}</b></div><div><span>Journey</span><b>{ticketData.origin} → {ticketData.destination}</b></div><div><span>Journey date</span><b>{formatJourneyDate(ticketData.date)}</b></div><div><span>Cancellation</span><b className="green-text"><Icon name="check" size={14} /> Railway verified</b></div><div><span>Ownership</span><b className="green-text"><Icon name="check" size={14} /> OTP verified</b></div><div><span>Payout</span><b>{payout === "upi" ? "asha.rail@okaxis" : "SBI · •••• 1842"}</b></div></div>
+              <div className="review-list"><div><span>Ticket</span><b>PNR {ticketData.pnr}</b></div><div><span>Journey</span><b>{ticketData.origin} → {ticketData.destination}</b></div><div><span>Journey date</span><b>{formatJourneyDate(ticketData.date)}</b></div><div><span>Cancellation</span><b className="green-text"><Icon name="check" size={14} /> Cancellation found</b></div><div><span>Ownership</span><b className="green-text"><Icon name="check" size={14} /> OTP confirmed</b></div><div><span>Refund account</span><b>{payout === "upi" ? "asha.rail@okaxis" : "SBI · •••• 1842"}</b></div></div>
               <button className="edit-link" onClick={() => go("details")}><Icon name="back" size={16} /> Edit ticket details</button>
-              <label className="consent-row"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span><b>I confirm these details are correct.</b><small>I consent to use these verified facts to create one refund claim for this journey.</small></span></label>
-              <div className="lock-preview"><Icon name="lock" /><div><b>Duplicate lock activates first</b><p>The claim key is reserved before any payment call, so a double tap cannot create two refunds.</p></div></div>
+              <label className="consent-row"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span><b>I confirm these details are correct.</b><small>I agree to use these details to create one refund request for this journey.</small></span></label>
+              <div className="lock-preview"><Icon name="lock" /><div><b>We check for an existing refund first</b><p>This prevents the same ticket from being refunded twice, even if the button is tapped again.</p></div></div>
               <BottomActions><button className="primary-button" disabled={!consent} onClick={() => go("tracking")}>Start ₹{ticketData.fare.toLocaleString("en-IN")} refund<Icon name="arrow" /></button></BottomActions>
             </div>
           )}
@@ -598,17 +596,16 @@ export default function TicketWapas() {
             <div className="screen tracking-screen">
               <div className={`success-orbit ${paid ? "paid" : ""}`}><span><Icon name="check" size={34} /></span></div>
               <p className="eyebrow">CLAIM TW-824-613</p>
-              <h1>{paid ? `₹${ticketData.fare.toLocaleString("en-IN")} has been paid.` : "Refund instruction created."}</h1>
-              <p className="hero-sub">{paid ? "Sent to your verified payout destination. Keep this reference for your records." : "Your claim is locked against duplicates and ready for the payment rail."}</p>
+              <h1>{paid ? `₹${ticketData.fare.toLocaleString("en-IN")} has been paid.` : "Your refund request is ready."}</h1>
+              <p className="hero-sub">{paid ? "Sent to your selected refund account. Keep this reference for your records." : "We found no earlier refund for this ticket. You can now complete the mocked payment."}</p>
               <div className="tracking-amount"><small>REFUND AMOUNT</small><b>₹{ticketData.fare.toLocaleString("en-IN")}</b><span className={paid ? "paid-state" : "pending-state"}>{paid ? "PAID" : "REFUND PENDING"}</span></div>
               <div className="timeline">
-                <div className="complete"><i><Icon name="check" size={13} /></i><span><b>Claim locked</b><small>24 Aug · 10:41:08</small></span></div>
-                <div className="complete"><i><Icon name="check" size={13} /></i><span><b>Railway cancellation verified</b><small>24 Aug · 10:41:09</small></span></div>
-                <div className={paid ? "complete" : "current"}><i>{paid ? <Icon name="check" size={13} /> : <span />}</i><span><b>{paid ? "Paid to verified destination" : "Payment instruction ready"}</b><small>{paid ? "UTR 4268•••914" : "Mock payment action available below"}</small></span></div>
+                <div className="complete"><i><Icon name="check" size={13} /></i><span><b>Refund request created</b><small>24 Aug · 10:41:08</small></span></div>
+                <div className="complete"><i><Icon name="check" size={13} /></i><span><b>Mock cancellation confirmed</b><small>24 Aug · 10:41:09</small></span></div>
+                <div className={paid ? "complete" : "current"}><i>{paid ? <Icon name="check" size={13} /> : <span />}</i><span><b>{paid ? "Paid to selected account" : "Refund ready to send"}</b><small>{paid ? "Payment reference 4268•••914" : "Complete the mock payment below"}</small></span></div>
               </div>
-              <div className="reference-row"><span>Idempotency key</span><code>{claimKey}</code></div>
               <BottomActions>
-                {!paid && <button className="primary-button" disabled={retrying} onClick={() => { setRetrying(true); window.setTimeout(() => { setPaid(true); setRetrying(false); }, 900); }}>{retrying ? "Confirming with gateway…" : "Simulate payment confirmation"}<Icon name="arrow" /></button>}
+                {!paid && <button className="primary-button" disabled={retrying} onClick={() => { setRetrying(true); window.setTimeout(() => { setPaid(true); setRetrying(false); }, 900); }}>{retrying ? "Checking payment status…" : "Complete mock payment"}<Icon name="arrow" /></button>}
                 <button className="secondary-button" onClick={() => reset()}>Start another ticket</button>
               </BottomActions>
             </div>

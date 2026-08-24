@@ -212,8 +212,8 @@ export async function POST(request: Request) {
       return json({
         code: parsed.documentType === "not_ticket" ? "NOT_COUNTER_TICKET" : "TICKET_UNCLEAR",
         message: parsed.documentType === "not_ticket"
-          ? "This image does not look like a PRS counter ticket. Upload a clear synthetic counter-ticket image or enter the details manually."
-          : "We could not confirm a readable PRS counter ticket in this image. Try another synthetic image or enter the details manually.",
+          ? "This image does not look like a physical railway counter ticket. Upload a clear synthetic counter-ticket image or enter the details manually."
+          : "We could not confirm a readable physical counter ticket in this image. Try another synthetic image or enter the details manually.",
       }, 422);
     }
     return json({ ticket: parsed, source: "openai-structured-extraction", stored: false });

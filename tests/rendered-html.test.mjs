@@ -83,7 +83,7 @@ test("server-renders the Ticket Wapas prototype", async () => {
   assert.match(html, /Start with a sample ticket/);
   assert.match(html, /PUBLIC SERVICE PROTOTYPE/);
   assert.match(html, /Independent project — not a government website/);
-  assert.match(html, /Cancelled PRS counter tickets/);
+  assert.match(html, /Cancelled physical counter tickets/);
   assert.match(html, /synthetic data only/i);
   assert.match(html, /Not affiliated with or operated by Indian Railways or IRCTC/);
   assert.doesNotMatch(html, /Your site is taking shape|Building your site/);
@@ -104,12 +104,13 @@ test("keeps secrets server-side and ships the social preview", async () => {
   assert.match(route, /NOT_COUNTER_TICKET/);
   assert.match(route, /documentType/);
   assert.doesNotMatch(client, /OPENAI_API_KEY|Bearer sk-/);
-  assert.match(client, /Duplicate lock activates first/i);
-  assert.match(client, /AI reads the ticket/i);
+  assert.match(client, /We check for an existing refund first/i);
+  assert.match(client, /Every field is editable, and you stay in control/i);
   assert.match(client, /type="date"/i);
   assert.match(client, /I checked the PNR, train number and journey date/i);
   assert.match(client, /Edit ticket details/i);
   assert.doesNotMatch(client, /JUDGE CONTROLS|Test the real edge cases|Demo: Happy path/i);
+  assert.doesNotMatch(client, /Idempotency key|tokenised|claim key|payment rail|Deterministic eligibility|fixed product rules|PNR \+ journey \+ claim type/i);
 });
 
 test("returns a safe manual fallback when AI extraction is not configured", async () => {
@@ -152,7 +153,7 @@ test("rejects an unrelated image instead of advancing the citizen journey", asyn
   assert.equal(result.status, 422);
   assert.deepEqual(await result.json(), {
     code: "NOT_COUNTER_TICKET",
-    message: "This image does not look like a PRS counter ticket. Upload a clear synthetic counter-ticket image or enter the details manually.",
+    message: "This image does not look like a physical railway counter ticket. Upload a clear synthetic counter-ticket image or enter the details manually.",
   });
 });
 

@@ -79,12 +79,12 @@ test("server-renders the Ticket Wapas prototype", async () => {
 
   const html = await response.text();
   assert.match(html, /<title>Ticket Wapas/);
-  assert.match(html, /Get the right refund path for your ticket/);
+  assert.match(html, /Refund for a paper railway ticket/);
   assert.match(html, /Start refund journey/);
-  assert.match(html, /Keep the original paper ticket and booking phone ready/);
+  assert.match(html, /Original paper ticket/);
   assert.match(html, /PUBLIC SERVICE PROTOTYPE/);
   assert.match(html, /Independent project — not a government website/);
-  assert.match(html, /PAPER COUNTER-TICKET REFUND/);
+  assert.match(html, /Guided citizen service/);
   assert.match(html, /synthetic data only/i);
   assert.match(html, /Not affiliated with or operated by Indian Railways, IRCTC/);
   assert.doesNotMatch(html, /Your site is taking shape|Building your site/);
@@ -120,6 +120,7 @@ test("keeps secrets server-side and ships the social preview", async () => {
   assert.match(client, /A photo alone cannot replace it/i);
   assert.match(client, /Cash at PRS counter/i);
   assert.match(client, /Prototype demonstration: Railway, OTP and payment responses are simulated/i);
+  assert.doesNotMatch(client, /home-visual|ticket-stub|CLEAR NEXT STEP|SERVICE OVERVIEW/i);
   assert.match(client, /अब यह नंबर मेरे पास नहीं है/);
   assert.match(client, /रिफंड शुरू करने के लिए तैयार/);
   assert.doesNotMatch(client, /JUDGE CONTROLS|Test the real edge cases|Demo: Happy path|judge-ready/i);

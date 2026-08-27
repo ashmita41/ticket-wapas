@@ -149,19 +149,6 @@ function BrandMark() {
   );
 }
 
-function TicketStub({ faded = false }: { faded?: boolean }) {
-  return (
-    <div className={`ticket-stub ${faded ? "faded" : ""}`} aria-label="Synthetic railway counter ticket">
-      <div className="ticket-notch notch-a" /><div className="ticket-notch notch-b" />
-      <div className="ticket-mini-head"><span>JOURNEY TICKET</span><b>PRS</b></div>
-      <div className="ticket-pnr"><small>PNR</small><strong>2468135790</strong></div>
-      <div className="ticket-route"><b>NDLS</b><span><i /><i /><i /></span><b>DBRT</b></div>
-      <div className="ticket-grid"><span>12424</span><span>24 AUG 26</span><span>2 ADULTS</span></div>
-      <div className="ticket-bottom"><span>₹4,860</span><span>DEMO / NOT VALID</span></div>
-    </div>
-  );
-}
-
 function StatusPill({ status, lang }: { status: "extracted" | "unclear" | "missing"; lang: Lang }) {
   const label = lang === "hi"
     ? status === "extracted" ? "मिल गया" : status === "unclear" ? "इसे जाँचें" : "ज़रूरी"
@@ -457,25 +444,6 @@ export default function TicketWapas() {
       </header>
 
       <div className="workspace">
-        <aside className="story-panel">
-          <p className="eyebrow">{tr("SERVICE OVERVIEW · सेवा की जानकारी", "सेवा की जानकारी · SERVICE OVERVIEW")}</p>
-          <h2>{tr("Cancelled counter-ticket refund support, in one guided journey.", "रद्द हुई काउंटर टिकट के रिफंड के लिए एक आसान, निर्देशित प्रक्रिया।")}</h2>
-          <p className="story-lead">{tr("E-tickets can be refunded automatically. Passengers with a physical counter ticket may still have to return to a railway counter.", "ई-टिकट का रिफंड अपने-आप हो सकता है। भौतिक काउंटर टिकट वाले यात्रियों को अब भी रेलवे काउंटर पर लौटना पड़ सकता है।")}</p>
-          <div className="evidence-card">
-            <span className="evidence-number">7.18 cr</span>
-            <p>{tr("counter tickets were booked from June 2025 to June 2026 — 11% of all reserved tickets.", "जून 2025 से जून 2026 तक काउंटर टिकट बुक हुईं — सभी आरक्षित टिकटों का 11%।")}</p>
-            <a href="https://www.pib.gov.in/PressReleasePage.aspx?PRID=2287719&lang=1&reg=48" target="_blank" rel="noreferrer">{tr("Ministry of Railways ↗", "रेल मंत्रालय ↗")}</a>
-          </div>
-          <div className="promise-list">
-            <div><span><Icon name="shield" /></span><p><b>{tr("A clear decision", "स्पष्ट निर्णय")}</b>{tr("See what was checked and why the ticket qualifies.", "देखें कि क्या जाँचा गया और टिकट रिफंड के योग्य क्यों है।")}</p></div>
-            <div><span><Icon name="lock" /></span><p><b>{tr("Protected from duplicate refunds", "दोबारा रिफंड से सुरक्षा")}</b>{tr("We check whether a refund already exists before starting another.", "नया रिफंड शुरू करने से पहले पुराने रिफंड की जाँच होती है।")}</p></div>
-            <div><span><Icon name="route" /></span><p><b>{tr("Help when details are unclear", "जानकारी साफ़ न हो तो मदद")}</b>{tr("Correct any field or enter the ticket manually.", "गलत जानकारी सुधारें या टिकट की जानकारी खुद भरें।")}</p></div>
-          </div>
-          <div className="state-strip" aria-label="Refund state model">
-            <span>{tr("ADD TICKET", "टिकट जोड़ें")}</span><i /> <span>{tr("CHECK", "जाँच")}</span><i /> <span>{tr("CONFIRM", "पुष्टि")}</span><i /> <span>{tr("REFUND", "रिफंड")}</span>
-          </div>
-        </aside>
-
         <section className="app-frame" aria-live="polite">
           <div className="prototype-ribbon"><Icon name="info" size={14} /> {tr("Independent prototype · Synthetic data only · No real refund", "स्वतंत्र प्रोटोटाइप · केवल नकली डेटा · असली रिफंड नहीं")}</div>
           {screen !== "home" && (
@@ -488,18 +456,20 @@ export default function TicketWapas() {
 
           {screen === "home" && (
             <div className="screen home-screen">
-              <div className="home-visual" aria-hidden="true">
-                <TicketStub />
-                <div className="refund-path"><span /><i /><i /><b><Icon name="check" size={22} /></b></div>
-                <div className="refund-card"><small>{tr("CLEAR NEXT STEP", "अगला कदम साफ़")}</small><strong>{tr("Refund", "रिफंड")}</strong><span>{tr("Check · hand over · receive", "जाँचें · सौंपें · पाएँ")}</span></div>
+              <div className="service-intro">
+                <span><Icon name="shield" size={22} /></span>
+                <p><b>{tr("Paper railway ticket refund", "कागज़ी रेलवे टिकट रिफंड")}</b><small>{tr("Guided citizen service", "निर्देशित नागरिक सेवा")}</small></p>
               </div>
-              <p className="eyebrow orange">{tr("PAPER COUNTER-TICKET REFUND", "कागज़ी काउंटर टिकट रिफंड")}</p>
-              <h1>{tr("Get the right refund path for your ticket.", "अपनी टिकट के लिए सही रिफंड प्रक्रिया पाएँ।")}</h1>
-              <p className="hero-sub">{tr("We help you check eligibility, prove the ticket is yours and complete the next step.", "हम योग्यता जाँचने, टिकट का मालिकाना साबित करने और अगला कदम पूरा करने में मदद करते हैं।")}</p>
-              <p className="start-note"><Icon name="ticket" size={17} />{tr("Keep the original paper ticket and booking phone ready.", "मूल कागज़ी टिकट और बुकिंग वाला फ़ोन पास रखें।")}</p>
-              <BottomActions>
+              <h1>{tr("Refund for a paper railway ticket", "कागज़ी रेलवे टिकट का रिफंड")}</h1>
+              <p className="hero-sub">{tr("Check a cancelled counter ticket and complete the right refund steps.", "रद्द हुई काउंटर टिकट जाँचें और रिफंड के सही कदम पूरे करें।")}</p>
+              <div className="home-actions">
                 <button className="primary-button" onClick={() => go("capture")}>{c.start}<Icon name="arrow" /></button>
-              </BottomActions>
+              </div>
+              <div className="home-requirements" aria-label={tr("What you need", "क्या चाहिए")}>
+                <span><Icon name="ticket" size={18} /><p><b>{tr("Original paper ticket", "मूल कागज़ी टिकट")}</b><small>{tr("Keep it with you", "इसे अपने पास रखें")}</small></p></span>
+                <span><Icon name="phone" size={18} /><p><b>{tr("Booking mobile", "बुकिंग वाला मोबाइल")}</b><small>{tr("For ownership check", "मालिकाना जाँच के लिए")}</small></p></span>
+              </div>
+              <p className="home-help">{tr("No login required · Usually takes about 2 minutes", "लॉगिन की ज़रूरत नहीं · आमतौर पर लगभग 2 मिनट")}</p>
             </div>
           )}
 
@@ -523,7 +493,7 @@ export default function TicketWapas() {
                 </div>
               )}
               <div className="or-divider"><span>{tr("or try the sample ticket", "या नमूना टिकट आज़माएँ")}</span></div>
-              <div className="sample-row"><TicketStub faded /><div><span className="sample-badge">{tr("SYNTHETIC", "नकली")}</span><b>Rajdhani · NDLS → DBRT</b><small>PNR 2468135790</small></div></div>
+              <div className="sample-row"><span className="sample-ticket-icon"><Icon name="file" size={24} /></span><div><span className="sample-badge">{tr("SYNTHETIC", "नकली")}</span><b>Rajdhani · NDLS → DBRT</b><small>PNR 2468135790</small></div></div>
               <BottomActions>
                 <button className="text-button" onClick={runSample} disabled={analysis === "reading"}>{analysis === "reading" ? tr("Reading sample…", "नमूना पढ़ा जा रहा है…") : tr("Use the sample ticket", "नमूना टिकट इस्तेमाल करें")}<Icon name="arrow" size={17} /></button>
               </BottomActions>

@@ -112,15 +112,16 @@ test("server-renders the Ticket Wapas prototype", async () => {
   assert.match(html, /Refund for a paper railway ticket/);
   assert.match(html, /Start refund journey/);
   assert.match(html, /Original paper ticket/);
-  assert.match(html, /PUBLIC SERVICE PROTOTYPE/);
-  assert.match(html, /Independent project — not a government website/);
+  assert.match(html, /CITIZEN REFUND SERVICE/);
+  assert.match(html, /Service information/);
   assert.match(html, /Guided citizen service/);
-  assert.match(html, /synthetic data only/i);
-  assert.match(html, /Not affiliated with or operated by Indian Railways, IRCTC/);
+  assert.match(html, /Independent prototype using synthetic data/i);
+  assert.match(html, /Not affiliated with Indian Railways, IRCTC or the Government of India/);
+  assert.doesNotMatch(html, /Independent prototype · Synthetic data only · No real refund/i);
   assert.doesNotMatch(html, /Your site is taking shape|Building your site/);
 });
 
-test("server-renders a simulated citizen sign-in for later refund tracking", async () => {
+test("server-renders a citizen sign-in for later refund tracking", async () => {
   const app = await worker();
   const response = await app.fetch(new Request("http://localhost/status", { headers: { accept: "text/html" } }), env, context);
 
@@ -129,22 +130,40 @@ test("server-renders a simulated citizen sign-in for later refund tracking", asy
   assert.match(html, /Sign in to track your refund/);
   assert.match(html, /Use sample number 98765 42714/);
   assert.match(html, /No password is needed/);
-  assert.match(html, /Simulated sign-in/);
+  assert.match(html, /CITIZEN REFUND ACCOUNT/);
+  assert.match(html, /Send one-time code/);
   assert.match(html, /do not enter your real mobile number/i);
 });
 
-test("server-renders the separate read-only authority queue", async () => {
+test("server-renders the separate authority operations queue", async () => {
   const app = await worker();
   const response = await app.fetch(new Request("http://localhost/authority", { headers: { accept: "text/html" } }), env, context);
 
   assert.equal(response.status, 200);
   const html = await response.text();
   assert.match(html, /Refund applications/);
-  assert.match(html, /Read-only synthetic queue/);
-  assert.match(html, /No government system connected/);
+  assert.match(html, /REFUND OPERATIONS/);
+  assert.match(html, /View-only access/);
   assert.match(html, /TW-UTS-HELP-219/);
   assert.match(html, /NEEDS REVIEW/);
-  assert.match(html, /Masked synthetic destination only/);
+  assert.match(html, /Masked destination only/);
+  assert.match(html, /Role permissions/);
+});
+
+test("server-renders public service details with process and sources", async () => {
+  const app = await worker();
+  const response = await app.fetch(new Request("http://localhost/service-information", { headers: { accept: "text/html" } }), env, context);
+
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /How the counter-ticket refund journey works/);
+  assert.match(html, /7\.18 crore/);
+  assert.match(html, /11% of 65\.08 crore/);
+  assert.match(html, /booking volume, not the number of cancellations or refund claims/i);
+  assert.match(html, /RESERVED · PRS/);
+  assert.match(html, /GENERAL \/ UNRESERVED · UTS/);
+  assert.match(html, /Railway and Government sources/);
+  assert.match(html, /Ministry of Railways source/);
 });
 
 test("keeps secrets server-side and ships the social preview", async () => {
@@ -168,7 +187,7 @@ test("keeps secrets server-side and ships the social preview", async () => {
   assert.match(client, /I checked the PNR, train number and journey date/i);
   assert.match(client, /Edit ticket details/i);
   assert.match(client, /I no longer have access to this number/i);
-  assert.match(client, /ASSISTED VERIFICATION · SIMULATED/i);
+  assert.match(client, /ASSISTED VERIFICATION/i);
   assert.match(client, /HELP REFERENCE TW-HELP-2714/i);
   assert.match(client, /Take or upload ticket photo/i);
   assert.match(client, /UNRESERVED UTS · SYNTHETIC/i);
@@ -181,16 +200,17 @@ test("keeps secrets server-side and ships the social preview", async () => {
   assert.match(client, /UTS REFERENCE TW-UTS-HELP-219/i);
   assert.match(client, /No refund was started/i);
   assert.match(client, /href="\/status"/i);
-  assert.match(client, /Authority demo/i);
+  assert.match(client, /Authority view/i);
   assert.match(client, /How we check a refund/i);
-  assert.match(client, /DIGITAL TICKET SURRENDER · SIMULATED/i);
+  assert.match(client, /DIGITAL TICKET SURRENDER/i);
   assert.match(client, /Take a one-time surrender photo/i);
   assert.match(client, /Cancel ticket digitally/i);
   assert.match(client, /DIGITAL SURRENDER RECEIPT TW-DS-824/i);
-  assert.match(client, /no live Railway record was changed/i);
   assert.doesNotMatch(client, /Authorised pickup|PRS counter handover|TW-HO-824/i);
   assert.match(client, /Cash at PRS counter/i);
-  assert.match(client, /Railway, ticket-record, OTP where applicable and payment responses are simulated/i);
+  assert.match(client, /Independent prototype using synthetic data/i);
+  assert.equal((client.match(/Independent prototype using synthetic data/g) ?? []).length, 1);
+  assert.doesNotMatch(client, /Independent prototype · Synthetic data only · No real refund/i);
   assert.doesNotMatch(client, /home-visual|ticket-stub|CLEAR NEXT STEP|SERVICE OVERVIEW/i);
   assert.match(client, /अब यह नंबर मेरे पास नहीं है/);
   assert.match(client, /रिफंड शुरू करने के लिए तैयार/);

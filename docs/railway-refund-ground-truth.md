@@ -392,7 +392,7 @@ The main journey should show only the current citizen question. A secondary **Ho
 4. **Ticket holder checked** — booking mobile/original ticket or assisted verification used to prevent duplicate claims.
 5. **Refund destination checked** — original payment source preferred; new account verified only for cash or failed-source cases.
 
-Every prototype result must include one concise disclosure: **“Prototype demonstration: Railway, OTP and payment responses on this screen are simulated.”** Detailed architecture belongs on the About/How it works page, not in the citizen form.
+Every page carries one concise footer disclosure that the service is an independent prototype using synthetic data, with no real Railway or refund connection. Detailed process, sources and production requirements belong on the **Service information** page—not in repeated banners inside the citizen form.
 
 ### Sources for the integration position
 

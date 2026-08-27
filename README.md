@@ -4,7 +4,7 @@ A competition prototype for remote refunds when an Indian railway paper counter-
 
 The product demonstrates ticket capture, automatic PRS/UTS classification, field confirmation, rules-based eligibility, ticket-possession verification, payout selection and refund tracking. The synthetic train-specific UTS sample completes the special-cancellation journey without inventing a booking-mobile OTP; an ordinary route-based UTS ticket is safely sent for an alternate-service check.
 
-The primary refund journey remains login-free. Citizens can optionally use the simulated sign-in at `/status` to reopen their synthetic refund history. A separate read-only `/authority` dashboard demonstrates how authorised staff could view applications and statuses without placing an admin panel inside the citizen journey.
+The primary refund journey remains login-free. Citizens can optionally use the sample sign-in at `/status` to reopen refund history. A separate `/authority` dashboard demonstrates how authorised staff could view applications and statuses without placing an admin panel inside the citizen journey. The `/service-information` page explains PRS and UTS tickets, the end-to-end process, the paper-ticket gap and the official sources behind the concept.
 
 ## Run locally
 
@@ -33,6 +33,6 @@ The extraction route uses the OpenAI Responses API with image input, a strict JS
 - Returning citizen: sample mobile + demo OTP opens refund history and detailed status
 - Authority operations: filter and inspect a read-only synthetic application queue
 
-All ticket, OTP, identity, railway, and payment data in the prototype is synthetic and explicitly labelled as simulated.
+All ticket, OTP, identity, Railway and payment data is synthetic. A concise disclosure appears in the footer, while the service-information page documents the process and production integrations without interrupting the citizen journey with repeated technical notices.
 
 The research and competition plan is in `docs/ticket-wapas-winning-plan.md`.

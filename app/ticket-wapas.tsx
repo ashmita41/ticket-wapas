@@ -128,7 +128,6 @@ const dictionary = {
     start: "Start refund journey",
     manual: "Enter ticket manually",
     proof: "Ownership checked before refund",
-    demo: "Prototype — synthetic data only",
     back: "Back",
     continue: "Continue",
   },
@@ -139,7 +138,6 @@ const dictionary = {
     start: "रिफंड प्रक्रिया शुरू करें",
     manual: "टिकट की जानकारी भरें",
     proof: "भुगतान से पहले सत्यापन",
-    demo: "प्रोटोटाइप — केवल नकली डेटा",
     back: "पीछे",
     continue: "आगे बढ़ें",
   },
@@ -478,8 +476,8 @@ export default function TicketWapas() {
   return (
     <main className="site-shell">
       <div className="service-strip">
-        <span>PUBLIC SERVICE PROTOTYPE · जन सेवा प्रोटोटाइप</span>
-        <b>{tr("Independent project — not a government website", "स्वतंत्र परियोजना — सरकारी वेबसाइट नहीं")}</b>
+        <span>CITIZEN REFUND SERVICE · नागरिक रिफंड सेवा</span>
+        <b>{tr("Paper counter-ticket support", "कागज़ी काउंटर टिकट सहायता")}</b>
       </div>
       <header className="topbar">
         <button className="brand-button" onClick={() => reset()} aria-label="Ticket Wapas home">
@@ -497,7 +495,6 @@ export default function TicketWapas() {
 
       <div className="workspace">
         <section className="app-frame" aria-live="polite">
-          <div className="prototype-ribbon"><Icon name="info" size={14} /> {tr("Independent prototype · Synthetic data only · No real refund", "स्वतंत्र प्रोटोटाइप · केवल नकली डेटा · असली रिफंड नहीं")}</div>
           {screen !== "home" && (
             <div className="progress-wrap">
               <button className="back-button" onClick={back}><Icon name="back" size={18} />{c.back}</button>
@@ -521,13 +518,13 @@ export default function TicketWapas() {
                 <span><Icon name="ticket" size={18} /><p><b>{tr("Original paper ticket", "मूल कागज़ी टिकट")}</b><small>{tr("Keep it with you", "इसे अपने पास रखें")}</small></p></span>
                 <span><Icon name="file" size={18} /><p><b>{tr("PNR or UTS number", "PNR या UTS नंबर")}</b><small>{tr("We detect the ticket type", "हम टिकट का प्रकार पहचानते हैं")}</small></p></span>
               </div>
-              <p className="home-help">{tr("No login required · Usually takes about 2 minutes", "लॉगिन की ज़रूरत नहीं · आमतौर पर लगभग 2 मिनट")}</p>
+              <p className="home-help">{tr("No login required · Usually takes about 2 minutes", "लॉगिन की ज़रूरत नहीं · आमतौर पर लगभग 2 मिनट")} · <a href="/service-information">{tr("Service information", "सेवा की जानकारी")}</a></p>
             </div>
           )}
 
           {screen === "capture" && (
             <div className="screen">
-              <div className="screen-heading"><p className="eyebrow">{tr("ADD YOUR TICKET", "अपनी टिकट जोड़ें")}</p><h1>{tr("How would you like to add it?", "टिकट कैसे जोड़ना चाहेंगे?")}</h1><p>{tr("Use synthetic information for this prototype—never a real passenger ticket.", "इस प्रोटोटाइप में नकली जानकारी इस्तेमाल करें—असली यात्री टिकट नहीं।")}</p></div>
+              <div className="screen-heading"><p className="eyebrow">{tr("ADD YOUR TICKET", "अपनी टिकट जोड़ें")}</p><h1>{tr("How would you like to add it?", "टिकट कैसे जोड़ना चाहेंगे?")}</h1><p>{tr("Use one of the sample tickets on this page—never a real passenger ticket.", "इस पेज पर दिए नमूना टिकटों में से एक इस्तेमाल करें—असली यात्री टिकट नहीं।")}</p></div>
               <input ref={fileRef} className="file-input-hidden" tabIndex={-1} aria-hidden="true" type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFile} />
               <button className="upload-zone" onClick={() => fileRef.current?.click()} disabled={analysis === "reading"} aria-busy={analysis === "reading"}>
                 <span className="upload-icon"><Icon name={analysis === "reading" ? "sparkle" : "camera"} size={28} /></span>
@@ -580,14 +577,13 @@ export default function TicketWapas() {
               {ticketData.ticketType === "uts" && !isTrainSpecificUts ? (
                 !utsReviewCreated ? (
                   <>
-                    <div className="screen-heading"><p className="eyebrow">{tr("UTS SERVICE CHECK · SIMULATED", "UTS सेवा जाँच · नकली")}</p><h1>{tr("One more check is needed.", "एक और जाँच ज़रूरी है।")}</h1><p>{tr("This general ticket is valid for a route, not one reserved train. One cancelled train may not make it refundable if another permitted service was available.", "यह जनरल टिकट किसी एक आरक्षित ट्रेन के बजाय मार्ग के लिए मान्य है। अगर दूसरी मान्य सेवा उपलब्ध थी, तो एक ट्रेन रद्द होने से रिफंड तय नहीं होता।")}</p></div>
+                    <div className="screen-heading"><p className="eyebrow">{tr("UTS SERVICE CHECK", "UTS सेवा जाँच")}</p><h1>{tr("One more check is needed.", "एक और जाँच ज़रूरी है।")}</h1><p>{tr("This general ticket is valid for a route, not one reserved train. One cancelled train may not make it refundable if another permitted service was available.", "यह जनरल टिकट किसी एक आरक्षित ट्रेन के बजाय मार्ग के लिए मान्य है। अगर दूसरी मान्य सेवा उपलब्ध थी, तो एक ट्रेन रद्द होने से रिफंड तय नहीं होता।")}</p></div>
                     <div className="decision-card operating"><span className="decision-icon"><Icon name="info" size={28} /></span><div><small>{tr("AUTHORISED UTS CHECK REQUIRED", "अधिकृत UTS जाँच ज़रूरी")}</small><strong>{tr("Refund not started", "रिफंड शुरू नहीं हुआ")}</strong><p>{tr("We will not invent a train link or promise the wrong amount.", "हम ट्रेन का गलत संबंध नहीं बनाएँगे या गलत राशि का वादा नहीं करेंगे।")}</p></div></div>
                     <div className="rule-list">
                       <div><span className="rule-ok"><Icon name="check" size={15} /></span><p><b>{tr("Unreserved UTS ticket confirmed", "अनारक्षित UTS टिकट पुष्ट")}</b><small>{ticketData.identifier}</small></p></div>
                       <div><span className="rule-bad"><Icon name="info" size={15} /></span><p><b>{tr("No specific train printed", "कोई खास ट्रेन नहीं छपी")}</b><small>{tr("The ticket can cover a route or time window", "टिकट किसी मार्ग या समय अवधि के लिए हो सकती है")}</small></p></div>
                       <div><span className="rule-bad"><Icon name="route" size={15} /></span><p><b>{tr("Alternate-service check pending", "वैकल्पिक सेवा की जाँच बाकी")}</b><small>{tr("An authorised UTS rules service must confirm special cancellation", "अधिकृत UTS नियम सेवा को विशेष रद्दीकरण पुष्ट करना होगा")}</small></p></div>
                     </div>
-                    <div className="simulation-disclosure"><Icon name="info" size={17} />{tr("Prototype boundary: no live UTS or train-status system was contacted.", "प्रोटोटाइप सीमा: किसी असली UTS या ट्रेन-स्थिति सिस्टम से संपर्क नहीं हुआ।")}</div>
                     <BottomActions><button className="primary-button" onClick={() => { setUtsReviewCreated(true); window.scrollTo({ top: 0, behavior: "auto" }); }}>{tr("Create UTS verification request", "UTS जाँच अनुरोध बनाएँ")}<Icon name="arrow" /></button><button className="secondary-button" onClick={() => go("details")}>{tr("Edit ticket details", "टिकट की जानकारी बदलें")}</button></BottomActions>
                   </>
                 ) : (
@@ -595,17 +591,17 @@ export default function TicketWapas() {
                     <div className="success-orbit paid"><span><Icon name="check" size={34} /></span></div>
                     <p className="eyebrow">{tr("UTS REFERENCE TW-UTS-HELP-219", "UTS संदर्भ TW-UTS-HELP-219")}</p>
                     <h1>{tr("Verification request created.", "जाँच अनुरोध बन गया।")}</h1>
-                    <p className="hero-sub">{tr("Your ticket details are saved in this simulated request. A real authorised service would check whether another permitted train remained available before deciding the refund.", "आपकी टिकट की जानकारी इस नकली अनुरोध में सहेजी गई है। वास्तविक अधिकृत सेवा रिफंड तय करने से पहले जाँचेगी कि दूसरी मान्य ट्रेन उपलब्ध थी या नहीं।")}</p>
+                    <p className="hero-sub">{tr("Your ticket details are saved with this request. An authorised service would check whether another permitted train remained available before deciding the refund.", "आपकी टिकट की जानकारी इस अनुरोध के साथ सहेजी गई है। अधिकृत सेवा रिफंड तय करने से पहले जाँचेगी कि दूसरी मान्य ट्रेन उपलब्ध थी या नहीं।")}</p>
                     <div className="plain-language"><b>{tr("No refund was started", "रिफंड शुरू नहीं हुआ")}</b><p>{tr("This protects citizens from an incorrect promise and Railways from refunding a ticket that could still be used on another service.", "यह नागरिकों को गलत वादे से और रेलवे को दूसरी सेवा में उपयोग हो सकने वाली टिकट का गलत रिफंड देने से बचाता है।")}</p></div>
                     <BottomActions><button className="primary-button" onClick={reset}>{tr("Return to home", "मुख्य पृष्ठ पर जाएँ")}<Icon name="arrow" /></button></BottomActions>
                   </div>
                 )
               ) : (
                 <>
-              <div className="screen-heading"><p className="eyebrow">{tr("ELIGIBILITY CHECK · SIMULATED", "योग्यता जाँच · नकली")}</p><h1>{ticketData.ticketType === "uts" ? tr("Special cancellation is available.", "विशेष रद्दीकरण उपलब्ध है।") : tr("Full refund is available.", "पूरा रिफंड उपलब्ध है।")}</h1><p>{ticketData.ticketType === "uts" ? tr("This train-specific UTS ticket matches the simulated special-cancellation record.", "यह ट्रेन-विशिष्ट UTS टिकट नकली विशेष रद्दीकरण रिकॉर्ड से मेल खाती है।") : tr("Your confirmed ticket details match the mocked cancellation record.", "आपकी पुष्टि की गई टिकट जानकारी नकली रद्दीकरण रिकॉर्ड से मेल खाती है।")}</p></div>
-              <div className="decision-card eligible"><span className="decision-icon"><Icon name="check" size={30} /></span><div><small>{ticketData.ticketType === "uts" ? tr("ELIGIBLE · UTS SPECIAL CANCELLATION", "योग्य · UTS विशेष रद्दीकरण") : tr("ELIGIBLE · 3 OF 3 CHECKS PASSED", "योग्य · 3 में से 3 जाँच पूरी")}</small><strong>₹{ticketData.fare.toLocaleString("en-IN")} {ticketData.ticketType === "uts" ? tr("refundable fare", "वापसी योग्य किराया") : tr("full fare", "पूरा किराया")}</strong><p>{ticketData.ticketType === "uts" ? tr("Amount returned by the simulated UTS rule check", "नकली UTS नियम जाँच से मिली राशि") : tr("No cancellation charge", "कोई रद्दीकरण शुल्क नहीं")} · {ticketData.passengers === 1 ? tr("1 passenger", "1 यात्री") : ticketData.passengers > 1 ? tr(`${ticketData.passengers} passengers`, `${ticketData.passengers} यात्री`) : tr("passenger count verified by mock record", "नकली रिकॉर्ड से यात्रियों की संख्या सत्यापित")}</p></div></div>
+              <div className="screen-heading"><p className="eyebrow">{tr("ELIGIBILITY CHECK", "योग्यता जाँच")}</p><h1>{ticketData.ticketType === "uts" ? tr("Special cancellation is available.", "विशेष रद्दीकरण उपलब्ध है।") : tr("Full refund is available.", "पूरा रिफंड उपलब्ध है।")}</h1><p>{ticketData.ticketType === "uts" ? tr("This train-specific UTS ticket matches the special-cancellation record.", "यह ट्रेन-विशिष्ट UTS टिकट विशेष रद्दीकरण रिकॉर्ड से मेल खाती है।") : tr("Your confirmed ticket details match the cancellation record.", "आपकी पुष्टि की गई टिकट जानकारी रद्दीकरण रिकॉर्ड से मेल खाती है।")}</p></div>
+              <div className="decision-card eligible"><span className="decision-icon"><Icon name="check" size={30} /></span><div><small>{ticketData.ticketType === "uts" ? tr("ELIGIBLE · UTS SPECIAL CANCELLATION", "योग्य · UTS विशेष रद्दीकरण") : tr("ELIGIBLE · 3 OF 3 CHECKS PASSED", "योग्य · 3 में से 3 जाँच पूरी")}</small><strong>₹{ticketData.fare.toLocaleString("en-IN")} {ticketData.ticketType === "uts" ? tr("refundable fare", "वापसी योग्य किराया") : tr("full fare", "पूरा किराया")}</strong><p>{ticketData.ticketType === "uts" ? tr("Amount returned by the UTS rule check", "UTS नियम जाँच से मिली राशि") : tr("No cancellation charge", "कोई रद्दीकरण शुल्क नहीं")} · {ticketData.passengers === 1 ? tr("1 passenger", "1 यात्री") : ticketData.passengers > 1 ? tr(`${ticketData.passengers} passengers`, `${ticketData.passengers} यात्री`) : tr("passenger count verified by the ticket record", "टिकट रिकॉर्ड से यात्रियों की संख्या सत्यापित")}</p></div></div>
               <div className="rule-list">
-                <div><span className="rule-ok"><Icon name="check" size={15} /></span><p><b>{tr("Train cancellation found", "ट्रेन रद्द होने की जानकारी मिली")}</b><small>{ticketData.ticketType === "uts" ? tr("Simulated UTS service record · train-specific ticket", "नकली UTS सेवा रिकॉर्ड · ट्रेन-विशिष्ट टिकट") : tr("Mock cancellation record · 23 Aug, 18:42", "नकली रद्दीकरण रिकॉर्ड · 23 अगस्त, 18:42")}</small></p></div>
+                <div><span className="rule-ok"><Icon name="check" size={15} /></span><p><b>{tr("Train cancellation found", "ट्रेन रद्द होने की जानकारी मिली")}</b><small>{ticketData.ticketType === "uts" ? tr("UTS service record · train-specific ticket", "UTS सेवा रिकॉर्ड · ट्रेन-विशिष्ट टिकट") : tr("Cancellation record · 23 Aug, 18:42", "रद्दीकरण रिकॉर्ड · 23 अगस्त, 18:42")}</small></p></div>
                 <div><span className="rule-ok"><Icon name="check" size={15} /></span><p><b>{ticketData.ticketType === "uts" ? tr("Special-cancellation condition met", "विशेष रद्दीकरण की शर्त पूरी") : tr("Physical counter ticket confirmed", "भौतिक काउंटर टिकट की पुष्टि हुई")}</b><small>{ticketData.ticketType === "uts" ? tr("This sample was issued for the cancelled train—not an open route ticket", "यह नमूना रद्द ट्रेन के लिए जारी हुआ था—खुले मार्ग की टिकट नहीं") : tr("The ticket type is eligible for this journey", "इस यात्रा के लिए टिकट का प्रकार योग्य है")}</small></p></div>
                 <div><span className="rule-ok"><Icon name="check" size={15} /></span><p><b>{tr("No earlier refund found", "पहले का कोई रिफंड नहीं मिला")}</b><small>{tr("This ticket can continue", "यह टिकट आगे बढ़ सकती है")}</small></p></div>
               </div>
@@ -618,7 +614,6 @@ export default function TicketWapas() {
                   <li><span><Icon name="shield" size={17} /></span><p><b>{tr("Ticket holder", "टिकट धारक")}</b><small>{ticketData.ticketType === "uts" ? tr("Use the original paper ticket and a fresh one-time photo; there is no booking mobile.", "मूल कागज़ी टिकट और एक नई तस्वीर इस्तेमाल करें; बुकिंग मोबाइल नहीं होता।") : tr("Check the booking mobile and original paper ticket.", "बुकिंग मोबाइल और मूल कागज़ी टिकट जाँचें।")}</small></p></li>
                   <li><span><Icon name="wallet" size={17} /></span><p><b>{tr("Refund destination", "रिफंड का स्थान")}</b><small>{tr("Use the original payment source first; verify a new destination only when needed.", "पहले मूल भुगतान स्रोत इस्तेमाल करें; ज़रूरत पर ही नया खाता जाँचें।")}</small></p></li>
                 </ol>
-                <p className="simulation-disclosure">{tr("Prototype demonstration: Railway, ticket-record, OTP where applicable and payment responses are simulated.", "प्रोटोटाइप प्रदर्शन: रेलवे, टिकट रिकॉर्ड, जहाँ लागू हो वहाँ OTP और भुगतान के उत्तर नकली हैं।")}</p>
               </details>
               <BottomActions><button className="primary-button" onClick={() => go(ticketData.ticketType === "uts" ? "surrender" : "otp")}>{ticketData.ticketType === "uts" ? tr("Verify the original ticket", "मूल टिकट सत्यापित करें") : tr("Verify ticket ownership", "टिकट का मालिकाना सत्यापित करें")}<Icon name="arrow" /></button></BottomActions>
                 </>
@@ -628,7 +623,7 @@ export default function TicketWapas() {
 
           {screen === "otp" && (
             <div className="screen">
-              <div className="screen-heading"><p className="eyebrow">{tr("PROVE OWNERSHIP · SIMULATED", "मालिकाना साबित करें · नकली")}</p><h1>{tr("Check the booking mobile.", "बुकिंग वाला फ़ोन जाँचें।")}</h1><p>{tr("The simulated Railway booking record returned", "नकली रेलवे बुकिंग रिकॉर्ड से मिला नंबर है")} <b>+91 •••••• 2714</b>{tr(". A 6-digit code was sent there.", "। इसी पर 6 अंकों का कोड भेजा गया है।")}</p></div>
+              <div className="screen-heading"><p className="eyebrow">{tr("PROVE OWNERSHIP", "मालिकाना साबित करें")}</p><h1>{tr("Check the booking mobile.", "बुकिंग वाला फ़ोन जाँचें।")}</h1><p>{tr("The booking record returned", "बुकिंग रिकॉर्ड से मिला नंबर है")} <b>+91 •••••• 2714</b>{tr(". A 6-digit code was sent there.", "। इसी पर 6 अंकों का कोड भेजा गया है।")}</p></div>
               <div className="otp-row" aria-label="One-time password">
                 {otp.map((digit, index) => <input key={index} inputMode="numeric" maxLength={1} value={digit} aria-label={tr(`OTP digit ${index + 1}`, `OTP अंक ${index + 1}`)} onChange={(event) => { const copy = [...otp]; copy[index] = event.target.value.replace(/\D/g, ""); setOtp(copy); }} />)}
               </div>
@@ -643,24 +638,23 @@ export default function TicketWapas() {
             <div className="screen">
               {surrenderStage === "ready" && (
                 <>
-                  <div className="screen-heading"><p className="eyebrow">{tr("DIGITAL TICKET SURRENDER · SIMULATED", "डिजिटल टिकट समर्पण · नकली")}</p><h1>{tr("Cancel the paper ticket digitally.", "कागज़ी टिकट को ऑनलाइन रद्द करें।")}</h1><p>{tr("Take one fresh photo to show that the original ticket is with you.", "यह दिखाने के लिए एक नई तस्वीर लें कि मूल टिकट आपके पास है।")}</p></div>
+                  <div className="screen-heading"><p className="eyebrow">{tr("DIGITAL TICKET SURRENDER", "डिजिटल टिकट समर्पण")}</p><h1>{tr("Cancel the paper ticket digitally.", "कागज़ी टिकट को ऑनलाइन रद्द करें।")}</h1><p>{tr("Take one fresh photo to show that the original ticket is with you.", "यह दिखाने के लिए एक नई तस्वीर लें कि मूल टिकट आपके पास है।")}</p></div>
                   <div className="surrender-challenge">
                     <div className="challenge-heading"><span><Icon name="camera" /></span><p><b>{tr("Take a one-time surrender photo", "एक बार इस्तेमाल होने वाली तस्वीर लें")}</b><small>{tr("Place the code beside the full ticket and take one clear photo.", "कोड को पूरे टिकट के पास रखकर एक साफ़ तस्वीर लें।")}</small></p></div>
                     <div className="challenge-code"><small>{tr("YOUR ONE-TIME CODE", "आपका एक बार का कोड")}</small><strong>TW 482</strong></div>
                     <p className="challenge-note"><Icon name="info" size={16} />{tr("Do not write on, cut or damage the ticket.", "टिकट पर न लिखें, न काटें और न ही उसे नुकसान पहुँचाएँ।")}</p>
                   </div>
-                  <div className="simulation-disclosure"><Icon name="info" size={17} />{tr("Prototype demonstration: the photo check and Railway response are simulated.", "प्रोटोटाइप प्रदर्शन: तस्वीर की जाँच और रेलवे का उत्तर नकली है।")}</div>
                   <BottomActions><button className="primary-button" onClick={() => { setSurrenderStage("matched"); window.scrollTo({ top: 0, behavior: "auto" }); }}><Icon name="camera" />{tr("Take demo surrender photo", "डेमो समर्पण तस्वीर लें")}</button></BottomActions>
                 </>
               )}
               {surrenderStage === "matched" && (
                 <>
-                  <div className="screen-heading"><p className="eyebrow">{tr("PHOTO CHECK COMPLETE · SIMULATED", "तस्वीर की जाँच पूरी · नकली")}</p><h1>{tr("Your ticket is ready to be cancelled.", "आपका टिकट रद्द करने के लिए तैयार है।")}</h1><p>{ticketData.ticketType === "uts" ? tr("The fresh photo and printed UTS details match the simulated ticket record.", "नई तस्वीर और छपी UTS जानकारी नकली टिकट रिकॉर्ड से मेल खाती है।") : tr("The fresh photo, ticket details and booking mobile have been matched.", "नई तस्वीर, टिकट की जानकारी और बुकिंग मोबाइल का मिलान हो गया है।")}</p></div>
+                  <div className="screen-heading"><p className="eyebrow">{tr("PHOTO CHECK COMPLETE", "तस्वीर की जाँच पूरी")}</p><h1>{tr("Your ticket is ready to be cancelled.", "आपका टिकट रद्द करने के लिए तैयार है।")}</h1><p>{ticketData.ticketType === "uts" ? tr("The fresh photo and printed UTS details match the ticket record.", "नई तस्वीर और छपी UTS जानकारी टिकट रिकॉर्ड से मेल खाती है।") : tr("The fresh photo, ticket details and booking mobile have been matched.", "नई तस्वीर, टिकट की जानकारी और बुकिंग मोबाइल का मिलान हो गया है।")}</p></div>
                   <div className="surrender-match">
                     <span className="rule-ok"><Icon name="check" size={15} /></span>
                     <p><b>{ticketData.ticketType === "uts" ? "UTS" : "PNR"} {ticketData.identifier}</b><small>{ticketData.origin} → {ticketData.destination} · {formatJourneyDate(ticketData.date, lang)}</small></p>
                   </div>
-                  {ticketData.ticketType === "uts" && <div className="ticket-type-notice compact"><Icon name="shield" size={18} /><p><b>{tr("No booking-mobile OTP used", "बुकिंग-मोबाइल OTP इस्तेमाल नहीं हुआ")}</b><span>{tr("UTS counter tickets are not linked to a booking mobile. The ticket number, simulated UTS record and fresh possession photo were checked instead.", "UTS काउंटर टिकट बुकिंग मोबाइल से जुड़ी नहीं होती। इसके बजाय टिकट नंबर, नकली UTS रिकॉर्ड और नई तस्वीर जाँची गई।")}</span></p></div>}
+                  {ticketData.ticketType === "uts" && <div className="ticket-type-notice compact"><Icon name="shield" size={18} /><p><b>{tr("No booking-mobile OTP used", "बुकिंग-मोबाइल OTP इस्तेमाल नहीं हुआ")}</b><span>{tr("UTS counter tickets are not linked to a booking mobile. The ticket number, UTS record and fresh possession photo were checked instead.", "UTS काउंटर टिकट बुकिंग मोबाइल से जुड़ी नहीं होती। इसके बजाय टिकट नंबर, UTS रिकॉर्ड और नई तस्वीर जाँची गई।")}</span></p></div>}
                   <div className="surrender-warning"><Icon name="alert" size={20} /><p><b>{tr("This action cannot be undone", "यह कार्रवाई वापस नहीं हो सकती")}</b><span>{tr("After cancellation, the paper ticket cannot be used for travel or another refund.", "रद्द होने के बाद कागज़ी टिकट यात्रा या दूसरे रिफंड के लिए इस्तेमाल नहीं हो सकती।")}</span></p></div>
                   <BottomActions><button className="primary-button" onClick={() => { setSurrenderStage("recorded"); window.scrollTo({ top: 0, behavior: "auto" }); }}>{tr("Cancel ticket digitally", "टिकट ऑनलाइन रद्द करें")}<Icon name="arrow" /></button><button className="secondary-button" onClick={() => { setSurrenderStage("ready"); window.scrollTo({ top: 0, behavior: "auto" }); }}>{tr("Retake demo photo", "डेमो तस्वीर दोबारा लें")}</button></BottomActions>
                 </>
@@ -670,9 +664,8 @@ export default function TicketWapas() {
                   <div className="success-orbit paid"><span><Icon name="check" size={34} /></span></div>
                   <p className="eyebrow">{ticketData.ticketType === "uts" ? tr("UTS CANCELLATION RECEIPT TW-UTS-824", "UTS रद्दीकरण रसीद TW-UTS-824") : tr("DIGITAL SURRENDER RECEIPT TW-DS-824", "डिजिटल समर्पण रसीद TW-DS-824")}</p>
                   <h1>{tr("Paper ticket cancelled digitally.", "कागज़ी टिकट ऑनलाइन रद्द हो गया।")}</h1>
-                  <p className="hero-sub">{ticketData.ticketType === "uts" ? tr("The simulated UTS record now blocks this ticket from travel and another refund.", "नकली UTS रिकॉर्ड अब इस टिकट को यात्रा और दूसरे रिफंड के लिए रोकता है।") : tr("The simulated Railway record now blocks this ticket from travel and another refund.", "नकली रेलवे रिकॉर्ड अब इस टिकट को यात्रा और दूसरे रिफंड के लिए रोकता है।")}</p>
+                  <p className="hero-sub">{ticketData.ticketType === "uts" ? tr("The UTS record now blocks this ticket from travel and another refund.", "UTS रिकॉर्ड अब इस टिकट को यात्रा और दूसरे रिफंड के लिए रोकता है।") : tr("The ticket record now blocks this ticket from travel and another refund.", "टिकट रिकॉर्ड अब इस टिकट को यात्रा और दूसरे रिफंड के लिए रोकता है।")}</p>
                   <div className="surrender-result"><p><Icon name="check" size={16} />{tr("Ticket marked cancelled", "टिकट रद्द दर्ज हुआ")}</p><p><Icon name="check" size={16} />{tr("Paper ticket made unusable", "कागज़ी टिकट उपयोग के लिए अमान्य हुआ")}</p><p><Icon name="check" size={16} />{tr("Digital receipt issued", "डिजिटल रसीद जारी हुई")}</p></div>
-                  <div className="simulation-disclosure"><Icon name="info" size={17} />{tr("Simulation only: no live Railway record was changed. A real service needs authorised Railway access.", "केवल नकली प्रक्रिया: कोई असली रेलवे रिकॉर्ड नहीं बदला। वास्तविक सेवा के लिए रेलवे की अनुमति आवश्यक है।")}</div>
                   <BottomActions><button className="primary-button" onClick={() => go("payout")}>{tr("Continue to refund destination", "रिफंड के स्थान पर आगे बढ़ें")}<Icon name="arrow" /></button></BottomActions>
                 </div>
               )}
@@ -683,16 +676,16 @@ export default function TicketWapas() {
             <div className="screen">
               {!assistanceCreated ? (
                 <>
-                  <div className="screen-heading"><p className="eyebrow">{tr("ASSISTED VERIFICATION · SIMULATED", "सहायता से सत्यापन · नकली")}</p><h1>{tr("You are not stuck.", "आपकी प्रक्रिया यहाँ नहीं रुकेगी।")}</h1><p>{tr("If the booking number is no longer available, create a help request. A real service would review the original ticket and tell you the accepted verification route.", "अगर बुकिंग वाला नंबर अब उपलब्ध नहीं है, तो सहायता अनुरोध बनाएँ। असली सेवा में कर्मचारी मूल टिकट जाँचकर सत्यापन का सही तरीका बताते।")}</p></div>
+                  <div className="screen-heading"><p className="eyebrow">{tr("ASSISTED VERIFICATION", "सहायता से सत्यापन")}</p><h1>{tr("You are not stuck.", "आपकी प्रक्रिया यहाँ नहीं रुकेगी।")}</h1><p>{tr("If the booking number is no longer available, create a help request. Support staff review the original ticket and explain the accepted verification route.", "अगर बुकिंग वाला नंबर अब उपलब्ध नहीं है, तो सहायता अनुरोध बनाएँ। सहायता कर्मचारी मूल टिकट जाँचकर सत्यापन का सही तरीका बताते हैं।")}</p></div>
                   <div className="assist-steps">
                     <div><span>1</span><p><b>{tr("Keep the original ticket", "मूल टिकट पास रखें")}</b><small>{tr("Support would compare it with the booking record.", "सहायता कर्मचारी इसे बुकिंग रिकॉर्ड से मिलाएँगे।")}</small></p></div>
-                    <div><span>2</span><p><b>{tr("Use a reachable mobile", "चालू मोबाइल नंबर दें")}</b><small>{tr("For this prototype, use the sample number below—not a real number.", "इस प्रोटोटाइप में नीचे दिया नमूना नंबर इस्तेमाल करें—असली नंबर नहीं।")}</small></p></div>
+                    <div><span>2</span><p><b>{tr("Use a reachable mobile", "चालू मोबाइल नंबर दें")}</b><small>{tr("Use the sample number below—not a real number.", "नीचे दिया नमूना नंबर इस्तेमाल करें—असली नंबर नहीं।")}</small></p></div>
                     <div><span>3</span><p><b>{tr("Save the help reference", "सहायता संदर्भ सुरक्षित रखें")}</b><small>{tr("It lets you continue without repeating the ticket details.", "इससे टिकट की जानकारी दोबारा भरे बिना आगे बढ़ सकते हैं।")}</small></p></div>
                   </div>
                   <label className="assist-mobile data-field">
                     <span className="field-label">{tr("REACHABLE MOBILE · SAMPLE ONLY", "चालू मोबाइल · केवल नमूना")}</span>
                     <input aria-label={tr("Reachable sample mobile number", "चालू नमूना मोबाइल नंबर")} inputMode="numeric" maxLength={10} placeholder="98765 43210" value={assistanceMobile} onChange={(event) => setAssistanceMobile(event.target.value.replace(/\D/g, "").slice(0, 10))} />
-                    <small className="field-hint">{tr("Do not enter a real phone number in this prototype.", "इस प्रोटोटाइप में असली फ़ोन नंबर न भरें।")}</small>
+                    <small className="field-hint">{tr("Do not enter a real phone number here.", "यहाँ असली फ़ोन नंबर न भरें।")}</small>
                   </label>
                   <button className="sample-fill" onClick={() => setAssistanceMobile("9876543210")}>{tr("Use sample number 98765 43210", "नमूना नंबर 98765 43210 इस्तेमाल करें")}</button>
                   <div className="safety-banner"><Icon name="shield" size={19} /><span><b>{tr("This does not approve the refund automatically", "इससे रिफंड अपने-आप मंज़ूर नहीं होता")}</b>{tr("Never share an OTP, Aadhaar number, bank password or payment PIN with support.", "सहायता कर्मचारी से OTP, आधार नंबर, बैंक पासवर्ड या भुगतान PIN कभी साझा न करें।")}</span></div>
@@ -703,8 +696,8 @@ export default function TicketWapas() {
                   <div className="success-orbit paid"><span><Icon name="check" size={34} /></span></div>
                   <p className="eyebrow">{tr("HELP REFERENCE TW-HELP-2714", "सहायता संदर्भ TW-HELP-2714")}</p>
                   <h1>{tr("Your help request is ready.", "आपका सहायता अनुरोध तैयार है।")}</h1>
-                  <p className="hero-sub">{tr("Keep this reference. In a real service, trained support staff would review the ticket and explain the next accepted verification step.", "यह संदर्भ सुरक्षित रखें। असली सेवा में प्रशिक्षित कर्मचारी टिकट जाँचकर सत्यापन का अगला मान्य तरीका बताएँगे।")}</p>
-                  <div className="plain-language"><b>{tr("Prototype boundary", "प्रोटोटाइप की सीमा")}</b><p>{tr("No railway system or support team was contacted, and no real personal information was used.", "किसी रेलवे सिस्टम या सहायता टीम से संपर्क नहीं हुआ और कोई असली व्यक्तिगत जानकारी इस्तेमाल नहीं हुई।")}</p></div>
+                  <p className="hero-sub">{tr("Keep this reference. The ticket must pass an authorised ownership review before any refund can continue.", "यह संदर्भ सुरक्षित रखें। रिफंड आगे बढ़ने से पहले टिकट की अधिकृत मालिकाना जाँच पूरी होनी चाहिए।")}</p>
+                  <div className="plain-language"><b>{tr("What happens next", "आगे क्या होगा")}</b><p>{tr("The request remains on hold until the accepted verification route is completed.", "मान्य सत्यापन प्रक्रिया पूरी होने तक अनुरोध रुका रहेगा।")}</p></div>
                   <BottomActions><button className="primary-button" onClick={() => go("otp")}>{tr("Use the demo code instead", "इसके बजाय डेमो कोड इस्तेमाल करें")}<Icon name="arrow" /></button><button className="secondary-button" onClick={reset}>{tr("Return to home", "मुख्य पृष्ठ पर जाएँ")}</button></BottomActions>
                 </div>
               )}
@@ -713,7 +706,7 @@ export default function TicketWapas() {
 
           {screen === "payout" && (
             <div className="screen">
-              <div className="screen-heading"><p className="eyebrow">{tr("CASH-PAID TICKET · SIMULATED RECORD", "नकद भुगतान टिकट · नकली रिकॉर्ड")}</p><h1>{tr(`Where should ₹${ticketData.fare.toLocaleString("en-IN")} go?`, `₹${ticketData.fare.toLocaleString("en-IN")} कहाँ भेजें?`)}</h1><p>{tr("A new destination is needed because this sample ticket was paid in cash.", "नया खाता इसलिए ज़रूरी है क्योंकि इस नमूना टिकट का भुगतान नकद हुआ था।")}</p></div>
+              <div className="screen-heading"><p className="eyebrow">{tr("CASH-PAID TICKET", "नकद भुगतान टिकट")}</p><h1>{tr(`Where should ₹${ticketData.fare.toLocaleString("en-IN")} go?`, `₹${ticketData.fare.toLocaleString("en-IN")} कहाँ भेजें?`)}</h1><p>{tr("A new destination is needed because this ticket was paid in cash.", "नया खाता इसलिए ज़रूरी है क्योंकि इस टिकट का भुगतान नकद हुआ था।")}</p></div>
               <div className="original-payment"><Icon name="wallet" size={19} /><span><small>{tr("ORIGINAL PAYMENT FOUND", "मूल भुगतान मिला")}</small><b>{ticketData.ticketType === "uts" ? tr("Cash at UTS counter", "UTS काउंटर पर नकद") : tr("Cash at PRS counter", "PRS काउंटर पर नकद")}</b></span></div>
               <div className="method-tabs" role="tablist" aria-label={tr("Refund destination", "रिफंड का स्थान")}><button role="tab" aria-selected={payout === "upi"} className={payout === "upi" ? "active" : ""} onClick={() => setPayout("upi")}><Icon name="phone" />UPI</button><button role="tab" aria-selected={payout === "bank"} className={payout === "bank" ? "active" : ""} onClick={() => setPayout("bank")}><Icon name="wallet" />{tr("Bank account", "बैंक खाता")}</button></div>
               {payout === "upi" ? (
@@ -721,8 +714,8 @@ export default function TicketWapas() {
               ) : (
                 <div className="payout-card selected"><span className="radio-dot" /><div><small>{tr("BANK ACCOUNT", "बैंक खाता")}</small><b>{tr("State Bank", "स्टेट बैंक")} · •••• 1842</b><p>{tr("Bank-returned name: Asha P.", "बैंक से मिला नाम: आशा P.")}</p></div><span className="verified-badge"><Icon name="check" size={13} /> {tr("NAME FOUND", "नाम मिला")}</span></div>
               )}
-              <div className="recipient-check"><Icon name="shield" /><div><b>{tr("Destination and claimant checked separately", "खाता और दावेदार अलग-अलग जाँचे गए")}</b><p>{ticketData.ticketType === "uts" ? tr("The mock bank confirmed the destination name. The UTS number and one-time ticket photo confirmed current possession—no booking mobile was used.", "नकली बैंक ने खाते का नाम बताया। UTS नंबर और टिकट की नई तस्वीर से मौजूदा कब्ज़े की पुष्टि हुई—बुकिंग मोबाइल इस्तेमाल नहीं हुआ।") : tr("The mock bank confirmed the destination name. The booking code and one-time ticket photo confirmed the claimant.", "नकली बैंक ने खाते का नाम बताया। बुकिंग कोड और टिकट की नई तस्वीर से दावेदार की पुष्टि हुई।")}</p></div></div>
-              <div className="privacy-note"><Icon name="lock" size={18} /><span>{tr("Only masked, synthetic payment details are used in this prototype.", "इस प्रोटोटाइप में केवल छिपी हुई, नकली भुगतान जानकारी इस्तेमाल होती है।")}</span></div>
+              <div className="recipient-check"><Icon name="shield" /><div><b>{tr("Destination and claimant checked separately", "खाता और दावेदार अलग-अलग जाँचे गए")}</b><p>{ticketData.ticketType === "uts" ? tr("The bank name check confirmed the destination. The UTS number and one-time ticket photo confirmed current possession—no booking mobile was used.", "बैंक नाम जाँच से खाते की पुष्टि हुई। UTS नंबर और टिकट की नई तस्वीर से मौजूदा कब्ज़े की पुष्टि हुई—बुकिंग मोबाइल इस्तेमाल नहीं हुआ।") : tr("The bank name check confirmed the destination. The booking code and one-time ticket photo confirmed the claimant.", "बैंक नाम जाँच से खाते की पुष्टि हुई। बुकिंग कोड और टिकट की नई तस्वीर से दावेदार की पुष्टि हुई।")}</p></div></div>
+              <div className="privacy-note"><Icon name="lock" size={18} /><span>{tr("Only masked payment details are shown.", "केवल छिपी हुई भुगतान जानकारी दिखाई जाती है।")}</span></div>
               <BottomActions><button className="primary-button" onClick={() => go("review")}>{tr("Review refund", "रिफंड की जाँच करें")}<Icon name="arrow" /></button></BottomActions>
             </div>
           )}
@@ -744,16 +737,16 @@ export default function TicketWapas() {
               <div className={`success-orbit ${paid ? "paid" : ""}`}><span><Icon name="check" size={34} /></span></div>
               <p className="eyebrow">{ticketData.ticketType === "uts" ? tr("CLAIM TW-UTS-613", "दावा TW-UTS-613") : tr("CLAIM TW-824-613", "दावा TW-824-613")}</p>
               <h1>{paid ? tr(`₹${ticketData.fare.toLocaleString("en-IN")} has been paid.`, `₹${ticketData.fare.toLocaleString("en-IN")} का भुगतान हो गया।`) : tr("Your refund request is ready.", "आपका रिफंड अनुरोध तैयार है।")}</h1>
-              <p className="hero-sub">{paid ? tr("Sent to your selected refund account. Keep this reference for your records.", "चुने हुए रिफंड खाते में भेज दिया गया है। यह संदर्भ सुरक्षित रखें।") : tr("We found no earlier refund for this ticket. You can now complete the mocked payment.", "इस टिकट का कोई पुराना रिफंड नहीं मिला। अब नकली भुगतान पूरा करें।")}</p>
+              <p className="hero-sub">{paid ? tr("Sent to your selected refund account. Keep this reference for your records.", "चुने हुए रिफंड खाते में भेज दिया गया है। यह संदर्भ सुरक्षित रखें।") : tr("We found no earlier refund for this ticket. You can now complete the payment.", "इस टिकट का कोई पुराना रिफंड नहीं मिला। अब भुगतान पूरा करें।")}</p>
               <div className="tracking-amount"><small>{tr("REFUND AMOUNT", "रिफंड राशि")}</small><b>₹{ticketData.fare.toLocaleString("en-IN")}</b><span className={paid ? "paid-state" : "pending-state"}>{paid ? tr("PAID", "भुगतान हुआ") : tr("REFUND PENDING", "रिफंड बाकी")}</span></div>
               <div className="timeline">
                 <div className="complete"><i><Icon name="check" size={13} /></i><span><b>{tr("Refund request created", "रिफंड अनुरोध बना")}</b><small>{tr("24 Aug · 10:41:08", "24 अगस्त · 10:41:08")}</small></span></div>
-                <div className="complete"><i><Icon name="check" size={13} /></i><span><b>{ticketData.ticketType === "uts" ? tr("UTS special cancellation confirmed", "UTS विशेष रद्दीकरण पुष्ट") : tr("Mock cancellation confirmed", "नकली रद्दीकरण की पुष्टि हुई")}</b><small>{tr("24 Aug · 10:41:09", "24 अगस्त · 10:41:09")}</small></span></div>
-                <div className="complete"><i><Icon name="check" size={13} /></i><span><b>{tr("Paper ticket cancelled digitally", "कागज़ी टिकट ऑनलाइन रद्द हुआ")}</b><small>{ticketData.ticketType === "uts" ? tr("Simulated receipt TW-UTS-824", "नकली रसीद TW-UTS-824") : tr("Simulated receipt TW-DS-824", "नकली रसीद TW-DS-824")}</small></span></div>
-                <div className={paid ? "complete" : "current"}><i>{paid ? <Icon name="check" size={13} /> : <span />}</i><span><b>{paid ? tr("Paid to selected account", "चुने खाते में भुगतान हुआ") : tr("Refund ready to send", "रिफंड भेजने के लिए तैयार")}</b><small>{paid ? tr("Payment reference 4268•••914", "भुगतान संदर्भ 4268•••914") : tr("Complete the mock payment below", "नीचे नकली भुगतान पूरा करें")}</small></span></div>
+                <div className="complete"><i><Icon name="check" size={13} /></i><span><b>{ticketData.ticketType === "uts" ? tr("UTS special cancellation confirmed", "UTS विशेष रद्दीकरण पुष्ट") : tr("Cancellation confirmed", "रद्दीकरण की पुष्टि हुई")}</b><small>{tr("24 Aug · 10:41:09", "24 अगस्त · 10:41:09")}</small></span></div>
+                <div className="complete"><i><Icon name="check" size={13} /></i><span><b>{tr("Paper ticket cancelled digitally", "कागज़ी टिकट ऑनलाइन रद्द हुआ")}</b><small>{ticketData.ticketType === "uts" ? tr("Receipt TW-UTS-824", "रसीद TW-UTS-824") : tr("Receipt TW-DS-824", "रसीद TW-DS-824")}</small></span></div>
+                <div className={paid ? "complete" : "current"}><i>{paid ? <Icon name="check" size={13} /> : <span />}</i><span><b>{paid ? tr("Paid to selected account", "चुने खाते में भुगतान हुआ") : tr("Refund ready to send", "रिफंड भेजने के लिए तैयार")}</b><small>{paid ? tr("Payment reference 4268•••914", "भुगतान संदर्भ 4268•••914") : tr("Complete the payment below", "नीचे भुगतान पूरा करें")}</small></span></div>
               </div>
               <BottomActions>
-                {!paid && <button className="primary-button" disabled={retrying} onClick={() => { setRetrying(true); window.setTimeout(() => { setPaid(true); setRetrying(false); }, 900); }}>{retrying ? tr("Checking payment status…", "भुगतान की स्थिति जाँची जा रही है…") : tr("Complete mock payment", "नकली भुगतान पूरा करें")}<Icon name="arrow" /></button>}
+                {!paid && <button className="primary-button" disabled={retrying} onClick={() => { setRetrying(true); window.setTimeout(() => { setPaid(true); setRetrying(false); }, 900); }}>{retrying ? tr("Checking payment status…", "भुगतान की स्थिति जाँची जा रही है…") : tr("Complete payment", "भुगतान पूरा करें")}<Icon name="arrow" /></button>}
                 <button className="secondary-button" onClick={() => reset()}>{tr("Start another ticket", "दूसरी टिकट शुरू करें")}</button>
               </BottomActions>
             </div>
@@ -763,8 +756,8 @@ export default function TicketWapas() {
 
       <footer className="site-footer">
         <b>Ticket Wapas · टिकट वापस</b>
-        <span>{tr("Independent civic-tech prototype. Not affiliated with or operated by Indian Railways, IRCTC, or the Government of India.", "स्वतंत्र नागरिक-तकनीक प्रोटोटाइप। भारतीय रेल, IRCTC या भारत सरकार से संबद्ध या उनके द्वारा संचालित नहीं।")}</span>
-        <span>{tr("No real tickets, identities, OTPs, payments, or government systems are used.", "कोई असली टिकट, पहचान, OTP, भुगतान या सरकारी सिस्टम इस्तेमाल नहीं होता।")} <a href="/authority">{tr("Authority demo", "प्राधिकरण डेमो")}</a></span>
+        <span>{tr("Independent prototype using synthetic data. No real Railway system or refund is connected. Not affiliated with Indian Railways, IRCTC or the Government of India.", "स्वतंत्र प्रोटोटाइप, जिसमें नकली डेटा इस्तेमाल होता है। कोई असली रेलवे सिस्टम या रिफंड जुड़ा नहीं है। भारतीय रेल, IRCTC या भारत सरकार से संबद्ध नहीं।")}</span>
+        <span><a href="/service-information">{tr("Service information", "सेवा की जानकारी")}</a> · <a href="/status">{tr("Refund status", "रिफंड स्थिति")}</a> · <a href="/authority">{tr("Authority view", "प्राधिकरण दृश्य")}</a></span>
       </footer>
 
     </main>

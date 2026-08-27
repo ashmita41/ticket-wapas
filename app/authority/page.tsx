@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import AuthorityDashboard from "./authority-dashboard";
 
 export const metadata: Metadata = {
-  title: "Authority operations demo — Ticket Wapas",
-  description: "A read-only synthetic application queue for the Ticket Wapas prototype.",
+  title: "Refund operations — Ticket Wapas",
+  description: "An application queue for reviewing counter-ticket refund requests and payment status.",
 };
 
 export default function AuthorityPage() {

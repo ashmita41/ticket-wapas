@@ -52,7 +52,7 @@ Ticket Wapas is simpler because it keeps the citizen in one bilingual, mobile-fi
 | Meaningful Codex/OpenAI use | Codex-built product; server-side structured ticket extraction using an OpenAI model | Meets |
 | Working, not static | The complete citizen flow works; unrelated uploads and invalid ticket fields stop safely with clear recovery | Meets |
 | Backend and process thinking | Deterministic rules, state transitions, retry and audit references plus a separate read-only authority queue | Meets |
-| Honest limitations | Government-service familiarity without official logos; persistent independent-prototype and mock-system labels | Meets |
+| Honest limitations | Government-service familiarity without official logos; one restrained footer disclosure plus a dedicated sourced service-information page | Meets |
 | No unsafe government-system access | No scraping, live government calls or undocumented APIs | Meets |
 | Public submission URL | Public Cloudflare deployment requiring no login or access request | Meets |
 | Two-minute video | Script is ready; recording still required | **Does not yet meet** |

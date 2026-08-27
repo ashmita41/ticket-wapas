@@ -46,13 +46,13 @@ export default function AuthorityDashboard() {
 
   return (
     <main className="site-shell authority-shell">
-      <div className="service-strip"><span>AUTHORITY OPERATIONS PROTOTYPE</span><b>Read-only synthetic queue · No government system connected</b></div>
-      <header className="topbar authority-topbar"><Link className="brand-button" href="/" aria-label="Ticket Wapas citizen service"><Mark /><span className="brand-copy"><b>TICKET WAPAS</b><small>AUTHORITY OPERATIONS DEMO</small></span></Link><div className="header-actions"><span className="operator-badge"><i>DO</i><span><b>Demo officer</b><small>Refund operations</small></span></span><Link className="account-link" href="/">Citizen service</Link></div></header>
+      <div className="service-strip"><span>REFUND OPERATIONS · रिफंड संचालन</span><b>Application status and review queue</b></div>
+      <header className="topbar authority-topbar"><Link className="brand-button" href="/" aria-label="Ticket Wapas citizen service"><Mark /><span className="brand-copy"><b>TICKET WAPAS</b><small>REFUND OPERATIONS</small></span></Link><div className="header-actions"><span className="operator-badge"><i>RO</i><span><b>Refund officer</b><small>Review access</small></span></span><Link className="account-link" href="/">Citizen service</Link></div></header>
 
       <div className="authority-workspace">
-        <div className="authority-heading"><div><p className="eyebrow">APPLICATION QUEUE · SYNTHETIC DATA</p><h1>Refund applications</h1><p>Review the status of citizen requests without exposing ticket images, mobile numbers or full payment details.</p></div><span className="last-sync">Demo data updated<br /><b>27 Aug 2026 · 12:20 PM</b></span></div>
-        <div className="authority-boundary"><b>Prototype boundary</b><span>This dashboard is a read-only product demonstration. It does not access or change any Railway, identity, OTP or payment system.</span></div>
-        <section className="metric-grid" aria-label="Application summary"><article><span>ALL OPEN</span><b>4</b><small>1 new · 2 need review · 1 approved</small></article><article><span>NEEDS REVIEW</span><b>2</b><small>Oldest waiting 1h 47m</small></article><article><span>APPROVED VALUE</span><b>₹4,860</b><small>Ready for payment</small></article><article><span>PAID TODAY</span><b>7</b><small>₹18,425 synthetic value</small></article></section>
+        <div className="authority-heading"><div><p className="eyebrow">APPLICATION QUEUE</p><h1>Refund applications</h1><p>Review the status of citizen requests without exposing ticket images, mobile numbers or full payment details.</p></div><span className="last-sync">Data updated<br /><b>27 Aug 2026 · 12:20 PM</b></span></div>
+        <div className="authority-access"><b>View-only access</b><span>Personal and payment information is masked. Payment approval requires a separately authorised role.</span></div>
+        <section className="metric-grid" aria-label="Application summary"><article><span>ALL OPEN</span><b>4</b><small>1 new · 2 need review · 1 approved</small></article><article><span>NEEDS REVIEW</span><b>2</b><small>Oldest waiting 1h 47m</small></article><article><span>APPROVED VALUE</span><b>₹4,860</b><small>Ready for payment</small></article><article><span>PAID TODAY</span><b>7</b><small>₹18,425 refund value</small></article></section>
 
         <section className="queue-panel">
           <div className="queue-toolbar"><div className="queue-filters" role="group" aria-label="Filter applications">{(["all", "new", "review", "approved", "paid"] as Filter[]).map((item) => <button className={filter === item ? "active" : ""} key={item} onClick={() => setFilter(item)}>{item === "all" ? "All" : statusLabel[item]}</button>)}</div><label className="queue-search"><span>Search</span><input aria-label="Search applications" placeholder="Claim, PNR, UTS or route" value={query} onChange={(event) => setQuery(event.target.value)} /></label></div>
@@ -67,14 +67,14 @@ export default function AuthorityDashboard() {
               <div className="detail-header"><span><small>APPLICATION</small><b>{selected.id}</b></span><em className={`queue-status ${selected.status}`}>{statusLabel[selected.status]}</em></div>
               <h2>{selected.route}</h2><p>{selected.type} counter ticket · {selected.ticket}</p>
               <div className="detail-amount"><span><small>REFUND VALUE</small><b>₹{selected.amount.toLocaleString("en-IN")}</b></span><span><small>LAST UPDATED</small><b>{selected.updated}</b></span></div>
-              <dl className="detail-checks"><div><dt>Eligibility reason</dt><dd>{selected.reason}</dd></div><div><dt>Ticket holder check</dt><dd>{selected.ownership}</dd></div><div><dt>Duplicate refund check</dt><dd className="safe-text">No earlier refund found</dd></div><div><dt>Payment details</dt><dd>Masked synthetic destination only</dd></div></dl>
+              <dl className="detail-checks"><div><dt>Eligibility reason</dt><dd>{selected.reason}</dd></div><div><dt>Ticket holder check</dt><dd>{selected.ownership}</dd></div><div><dt>Duplicate refund check</dt><dd className="safe-text">No earlier refund found</dd></div><div><dt>Payment details</dt><dd>Masked destination only</dd></div></dl>
               <div className="detail-history"><b>Application history</b><p><i />Citizen submitted request <small>10:41 AM</small></p><p><i />Ticket and cancellation checks completed <small>10:42 AM</small></p><p className={selected.status === "review" || selected.status === "new" ? "current" : ""}><i />{selected.status === "paid" ? "Refund payment confirmed" : selected.status === "approved" ? "Approved for payment" : "Waiting for authorised review"} <small>{selected.updated}</small></p></div>
-              <div className="read-only-note"><b>Read-only demo</b><span>Operational actions and role-based access would be connected only through authorised Railway systems.</span></div>
+              <div className="read-only-note"><b>Role permissions</b><span>This role can view and triage applications. Cancellation and payment approval require separate authorised access.</span></div>
             </aside>
           </div>
         </section>
       </div>
-      <footer className="site-footer authority-footer"><b>Ticket Wapas · Authority demo</b><span>Independent civic-tech prototype. Not affiliated with or operated by Indian Railways, IRCTC or the Government of India.</span><span><Link href="/status">Citizen refund sign-in</Link></span></footer>
+      <footer className="site-footer authority-footer"><b>Ticket Wapas · Refund operations</b><span>Independent prototype using synthetic data. No real Railway system or refund is connected. Not affiliated with Indian Railways, IRCTC or the Government of India.</span><span><Link href="/service-information">Service information</Link> · <Link href="/status">Citizen refund sign-in</Link></span></footer>
     </main>
   );
 }

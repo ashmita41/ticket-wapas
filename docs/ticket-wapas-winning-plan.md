@@ -64,8 +64,8 @@ Important evidence boundary: 7.18 crore is the number of counter bookings, not t
 
 ### Honesty
 
-- A persistent notice says: “Independent hackathon prototype. All railway, OTP and payment integrations are simulated. No real refund is processed.”
-- Mock boundaries are repeated on the result and status screens.
+- One restrained footer disclosure says that this is an independent prototype using synthetic data, with no real Railway system or refund connected.
+- Sample tickets, mobile numbers and OTPs are labelled where citizens interact with them; the dedicated Service information page documents integration boundaries and sources without repeating technical warnings in every step.
 
 ## 4. Product promise
 
@@ -439,15 +439,15 @@ Never collect real PNRs, Aadhaar numbers, OTPs or payment details during researc
 - Project summary under 250 words.
 - Codex contribution described concretely.
 - Open-source libraries and assets disclosed with licences.
-- Independent prototype disclaimer visible.
+- Independent prototype disclaimer visible once in the page footer.
 - No official logo, real government data, real personal data or undocumented API.
-- “What works” and “what is mocked” visible both in the app and submission.
+- “What works” and “what is mocked” documented on the Service information page and in the submission.
 
 ## 16. Kill list
 
 Do not spend the five-day window on:
 
-- Admin dashboards.
+- Expanding the small authority-status queue beyond what is needed to prove the end-to-end operating model.
 - Waitlist prediction or alternative journey booking.
 - A general railway assistant/chatbot.
 - Real government integration or scraping.
@@ -464,7 +464,7 @@ Do not spend the five-day window on:
 | “How can the paper ticket be trusted remotely?” | Ticket possession + booking-mobile OTP + name-matched payout + atomic PNR refund lock. |
 | “Someone may collect the refund twice” | Mark the PNR `REFUND_PENDING` before payout and make submission idempotent. |
 | “What about people without smartphones or linked mobiles?” | Keep the assisted counter route; do not pretend one channel serves everyone. |
-| “The prototype cannot really pay” | Say so prominently; demonstrate a complete simulated integration with an auditable state machine. |
+| “The prototype cannot really pay” | State it clearly in the footer and Service information page; demonstrate a complete simulated integration with an auditable state machine. |
 | “Why is AI needed?” | AI/OCR reduces typing; deterministic rules protect eligibility. Codex is meaningfully used across the build. |
 | “What if the model misreads a PNR?” | Strict nullable schema, `UNCLEAR`/`MISSING` abstention, server validation and mandatory citizen confirmation. |
 | “What if the API is down during judging?” | Preloaded deterministic sample plus manual entry; the refund journey never depends on a successful model call. |

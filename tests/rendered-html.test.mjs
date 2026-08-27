@@ -115,9 +115,12 @@ test("keeps secrets server-side and ships the social preview", async () => {
   assert.match(client, /HELP REFERENCE TW-HELP-2714/i);
   assert.match(client, /Take or upload ticket photo/i);
   assert.match(client, /How we check a refund/i);
-  assert.match(client, /ORIGINAL TICKET HANDOVER · SIMULATED/i);
-  assert.match(client, /HANDOVER RECEIPT TW-HO-824/i);
-  assert.match(client, /A photo alone cannot replace it/i);
+  assert.match(client, /DIGITAL TICKET SURRENDER · SIMULATED/i);
+  assert.match(client, /Take a one-time surrender photo/i);
+  assert.match(client, /Cancel ticket digitally/i);
+  assert.match(client, /DIGITAL SURRENDER RECEIPT TW-DS-824/i);
+  assert.match(client, /no live Railway record was changed/i);
+  assert.doesNotMatch(client, /Authorised pickup|PRS counter handover|TW-HO-824/i);
   assert.match(client, /Cash at PRS counter/i);
   assert.match(client, /Prototype demonstration: Railway, OTP and payment responses are simulated/i);
   assert.doesNotMatch(client, /home-visual|ticket-stub|CLEAR NEXT STEP|SERVICE OVERVIEW/i);

@@ -79,14 +79,14 @@ test("server-renders the Ticket Wapas prototype", async () => {
 
   const html = await response.text();
   assert.match(html, /<title>Ticket Wapas/);
-  assert.match(html, /The train was cancelled/);
-  assert.match(html, /Check my refund/);
-  assert.match(html, /Before you begin/);
+  assert.match(html, /Get the right refund path for your ticket/);
+  assert.match(html, /Start refund journey/);
+  assert.match(html, /Keep the original paper ticket and booking phone ready/);
   assert.match(html, /PUBLIC SERVICE PROTOTYPE/);
   assert.match(html, /Independent project — not a government website/);
-  assert.match(html, /Cancelled physical counter tickets/);
+  assert.match(html, /PAPER COUNTER-TICKET REFUND/);
   assert.match(html, /synthetic data only/i);
-  assert.match(html, /Not affiliated with or operated by Indian Railways or IRCTC/);
+  assert.match(html, /Not affiliated with or operated by Indian Railways, IRCTC/);
   assert.doesNotMatch(html, /Your site is taking shape|Building your site/);
 });
 
@@ -113,6 +113,13 @@ test("keeps secrets server-side and ships the social preview", async () => {
   assert.match(client, /I no longer have access to this number/i);
   assert.match(client, /ASSISTED VERIFICATION · SIMULATED/i);
   assert.match(client, /HELP REFERENCE TW-HELP-2714/i);
+  assert.match(client, /Take or upload ticket photo/i);
+  assert.match(client, /How we check a refund/i);
+  assert.match(client, /ORIGINAL TICKET HANDOVER · SIMULATED/i);
+  assert.match(client, /HANDOVER RECEIPT TW-HO-824/i);
+  assert.match(client, /A photo alone cannot replace it/i);
+  assert.match(client, /Cash at PRS counter/i);
+  assert.match(client, /Prototype demonstration: Railway, OTP and payment responses are simulated/i);
   assert.match(client, /अब यह नंबर मेरे पास नहीं है/);
   assert.match(client, /रिफंड शुरू करने के लिए तैयार/);
   assert.doesNotMatch(client, /JUDGE CONTROLS|Test the real edge cases|Demo: Happy path|judge-ready/i);

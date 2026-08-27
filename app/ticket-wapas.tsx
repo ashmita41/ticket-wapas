@@ -9,12 +9,14 @@ type Screen =
   | "eligibility"
   | "otp"
   | "assisted"
+  | "handover"
   | "payout"
   | "review"
   | "tracking";
 
 type Lang = "en" | "hi";
 type Payout = "upi" | "bank";
+type Handover = "pickup" | "counter";
 type ConfidenceStatus = "extracted" | "unclear" | "missing";
 type RequiredTicketField = "pnr" | "trainNumber" | "date" | "origin" | "destination" | "fare";
 type AnalysisState = "idle" | "reading" | "done" | "fallback" | "rejected";
@@ -88,14 +90,14 @@ const emptyTicket: TicketData = {
   },
 };
 
-const screens: Screen[] = ["home", "capture", "details", "eligibility", "otp", "payout", "review", "tracking"];
+const screens: Screen[] = ["home", "capture", "details", "eligibility", "otp", "handover", "payout", "review", "tracking"];
 
 const dictionary = {
   en: {
     strap: "COUNTER-TICKET REFUNDS, WITHOUT THE RETURN TRIP",
     hero: "The train was cancelled. Your refund journey should be too.",
     sub: "Check a cancelled counter ticket, confirm it belongs to you, and receive the refund digitally — without going back to the railway counter.",
-    start: "Check my refund",
+    start: "Start refund journey",
     manual: "Enter ticket manually",
     proof: "Ownership checked before refund",
     demo: "Prototype — synthetic data only",
@@ -106,7 +108,7 @@ const dictionary = {
     strap: "काउंटर टिकट रिफंड, बिना स्टेशन लौटे",
     hero: "ट्रेन रद्द हुई है। रिफंड के लिए सफ़र क्यों?",
     sub: "रद्द हुई काउंटर टिकट को जाँचें, मालिकाना साबित करें और रिफंड डिजिटल रूप से पाएँ — रेलवे काउंटर पर लौटे बिना।",
-    start: "अपना रिफंड जाँचें",
+    start: "रिफंड प्रक्रिया शुरू करें",
     manual: "टिकट की जानकारी भरें",
     proof: "भुगतान से पहले सत्यापन",
     demo: "प्रोटोटाइप — केवल नकली डेटा",
@@ -273,6 +275,8 @@ export default function TicketWapas() {
   const [ticketData, setTicketData] = useState(ticket);
   const [ticketConfirmed, setTicketConfirmed] = useState(false);
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [handover, setHandover] = useState<Handover>("pickup");
+  const [handoverRecorded, setHandoverRecorded] = useState(false);
   const [payout, setPayout] = useState<Payout>("upi");
   const [consent, setConsent] = useState(true);
   const [paid, setPaid] = useState(false);
@@ -283,6 +287,7 @@ export default function TicketWapas() {
   const c = dictionary[lang];
   const tr = (english: string, hindi: string) => lang === "hi" ? hindi : english;
   const screenIndex = screen === "assisted" ? screens.indexOf("otp") : screens.indexOf(screen);
+  const journeyStepCount = screens.length - 1;
 
   const effectiveConfidence = ticketData.confidence;
   const confidentFieldCount = Object.values(effectiveConfidence).filter((status) => status === "extracted").length;
@@ -314,6 +319,8 @@ export default function TicketWapas() {
     setTicketData(ticket);
     setTicketConfirmed(false);
     setOtp(["", "", "", "", "", ""]);
+    setHandover("pickup");
+    setHandoverRecorded(false);
     setPayout("upi");
     setConsent(true);
     setPaid(false);
@@ -474,50 +481,39 @@ export default function TicketWapas() {
           {screen !== "home" && (
             <div className="progress-wrap">
               <button className="back-button" onClick={back}><Icon name="back" size={18} />{c.back}</button>
-              <div className="progress-info"><span>{tr(`STEP ${screenIndex} OF 7`, `चरण ${screenIndex} / 7`)}</span><b>{Math.round((screenIndex / 7) * 100)}%</b></div>
-              <div className="progress-track"><span style={{ width: `${(screenIndex / 7) * 100}%` }} /></div>
+              <div className="progress-info"><span>{tr(`STEP ${screenIndex} OF ${journeyStepCount}`, `चरण ${screenIndex} / ${journeyStepCount}`)}</span><b>{Math.round((screenIndex / journeyStepCount) * 100)}%</b></div>
+              <div className="progress-track"><span style={{ width: `${(screenIndex / journeyStepCount) * 100}%` }} /></div>
             </div>
           )}
 
           {screen === "home" && (
             <div className="screen home-screen">
-              <div className="service-facts" aria-label="Service information">
-                <span><small>{tr("SERVICE FOR", "सेवा")}</small><b>{tr("Cancelled physical counter tickets", "रद्द हुई भौतिक काउंटर टिकट")}</b></span>
-                <span><small>{tr("ACCESS", "पहुँच")}</small><b>{tr("No login required", "लॉगिन की ज़रूरत नहीं")}</b></span>
-                <span><small>{tr("STATUS", "स्थिति")}</small><b>{tr("Prototype using mock systems", "नकली सिस्टम वाला प्रोटोटाइप")}</b></span>
-              </div>
               <div className="home-visual" aria-hidden="true">
                 <TicketStub />
                 <div className="refund-path"><span /><i /><i /><b><Icon name="check" size={22} /></b></div>
-                <div className="refund-card"><small>{tr("REFUND READY", "रिफंड तैयार")}</small><strong>₹4,860</strong><span>{tr("Verified digitally", "डिजिटल सत्यापन हुआ")}</span></div>
+                <div className="refund-card"><small>{tr("CLEAR NEXT STEP", "अगला कदम साफ़")}</small><strong>{tr("Refund", "रिफंड")}</strong><span>{tr("Check · hand over · receive", "जाँचें · सौंपें · पाएँ")}</span></div>
               </div>
-              <p className="eyebrow orange">{c.strap}</p>
-              <h1>{c.hero}</h1>
-              <p className="hero-sub">{c.sub}</p>
-              <div className="trust-line"><span><Icon name="shield" size={16} />{c.proof}</span><span><Icon name="lock" size={16} />{tr("Protected from duplicate refunds", "दोबारा रिफंड से सुरक्षा")}</span></div>
-              <div className="before-start" aria-label={tr("Before you begin", "शुरू करने से पहले")}>
-                <b>{tr("Before you begin", "शुरू करने से पहले")}</b>
-                <div><span><Icon name="phone" size={17} />{tr("About 2 minutes", "लगभग 2 मिनट")}</span><span><Icon name="ticket" size={17} />{tr("Keep the ticket and booking phone ready", "टिकट और बुकिंग वाला फ़ोन पास रखें")}</span><span><Icon name="lock" size={17} />{tr("No account needed", "खाता ज़रूरी नहीं")}</span></div>
-              </div>
+              <p className="eyebrow orange">{tr("PAPER COUNTER-TICKET REFUND", "कागज़ी काउंटर टिकट रिफंड")}</p>
+              <h1>{tr("Get the right refund path for your ticket.", "अपनी टिकट के लिए सही रिफंड प्रक्रिया पाएँ।")}</h1>
+              <p className="hero-sub">{tr("We help you check eligibility, prove the ticket is yours and complete the next step.", "हम योग्यता जाँचने, टिकट का मालिकाना साबित करने और अगला कदम पूरा करने में मदद करते हैं।")}</p>
+              <p className="start-note"><Icon name="ticket" size={17} />{tr("Keep the original paper ticket and booking phone ready.", "मूल कागज़ी टिकट और बुकिंग वाला फ़ोन पास रखें।")}</p>
               <BottomActions>
                 <button className="primary-button" onClick={() => go("capture")}>{c.start}<Icon name="arrow" /></button>
-                <button className="text-button" onClick={startManualEntry}>{c.manual}<Icon name="arrow" size={17} /></button>
               </BottomActions>
-              <p className="disclaimer">{tr("Independent civic-tech concept. Not affiliated with or operated by Indian Railways or IRCTC.", "स्वतंत्र नागरिक-तकनीक अवधारणा। भारतीय रेल या IRCTC से संबद्ध या उनके द्वारा संचालित नहीं।")}</p>
             </div>
           )}
 
           {screen === "capture" && (
             <div className="screen">
-              <div className="screen-heading"><p className="eyebrow">{tr("ADD A SYNTHETIC TICKET", "नकली टिकट जोड़ें")}</p><h1>{tr("Let’s read the journey details.", "यात्रा की जानकारी पढ़ें।")}</h1><p>{tr("Use a clear photo of the full physical counter ticket. For this prototype, do not upload a real passenger ticket.", "पूरी भौतिक काउंटर टिकट की साफ़ तस्वीर लें। इस प्रोटोटाइप में असली यात्री टिकट अपलोड न करें।")}</p></div>
-              <div className="safety-banner"><Icon name="shield" size={19} /><span><b>{tr("Synthetic tickets only", "केवल नकली टिकट")}</b>{tr("This demo sends the image for one-time reading, does not store it, and never contacts a government system.", "यह डेमो तस्वीर को केवल एक बार पढ़ता है, उसे सहेजता नहीं और किसी सरकारी सिस्टम से संपर्क नहीं करता।")}</span></div>
+              <div className="screen-heading"><p className="eyebrow">{tr("ADD YOUR TICKET", "अपनी टिकट जोड़ें")}</p><h1>{tr("How would you like to add it?", "टिकट कैसे जोड़ना चाहेंगे?")}</h1><p>{tr("Use synthetic information for this prototype—never a real passenger ticket.", "इस प्रोटोटाइप में नकली जानकारी इस्तेमाल करें—असली यात्री टिकट नहीं।")}</p></div>
               <input ref={fileRef} className="file-input-hidden" tabIndex={-1} aria-hidden="true" type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFile} />
               <button className="upload-zone" onClick={() => fileRef.current?.click()} disabled={analysis === "reading"} aria-busy={analysis === "reading"}>
                 <span className="upload-icon"><Icon name={analysis === "reading" ? "sparkle" : "camera"} size={28} /></span>
-                <strong>{analysis === "reading" ? tr("Reading ticket…", "टिकट पढ़ी जा रही है…") : tr("Take photo or upload", "तस्वीर लें या अपलोड करें")}</strong>
+                <strong>{analysis === "reading" ? tr("Reading ticket…", "टिकट पढ़ी जा रही है…") : tr("Take or upload ticket photo", "टिकट की तस्वीर लें या अपलोड करें")}</strong>
                 <small>{tr("JPG, PNG or WEBP · up to 5 MB · compressed on your device", "JPG, PNG या WEBP · अधिकतम 5 MB · आपके फ़ोन पर आकार कम होगा")}</small>
                 {analysis === "reading" && <span className="scan-line" />}
               </button>
+              <button className="secondary-button capture-manual" onClick={startManualEntry}>{tr("Enter ticket details", "टिकट की जानकारी भरें")}<Icon name="arrow" size={17} /></button>
               {(analysis === "fallback" || analysis === "rejected") && (
                 <div className={`capture-error ${analysis}`} role="alert">
                   <span><Icon name={analysis === "rejected" ? "alert" : "info"} size={24} /></span>
@@ -529,8 +525,7 @@ export default function TicketWapas() {
               <div className="or-divider"><span>{tr("or try the sample ticket", "या नमूना टिकट आज़माएँ")}</span></div>
               <div className="sample-row"><TicketStub faded /><div><span className="sample-badge">{tr("SYNTHETIC", "नकली")}</span><b>Rajdhani · NDLS → DBRT</b><small>PNR 2468135790</small></div></div>
               <BottomActions>
-                <button className="primary-button" onClick={runSample} disabled={analysis === "reading"}>{analysis === "reading" ? tr("Extracting fields…", "जानकारी पढ़ी जा रही है…") : tr("Use sample ticket", "नमूना टिकट इस्तेमाल करें")}<Icon name="arrow" /></button>
-                <button className="text-button" onClick={startManualEntry}>{tr("Enter details instead", "इसके बजाय जानकारी खुद भरें")}</button>
+                <button className="text-button" onClick={runSample} disabled={analysis === "reading"}>{analysis === "reading" ? tr("Reading sample…", "नमूना पढ़ा जा रहा है…") : tr("Use the sample ticket", "नमूना टिकट इस्तेमाल करें")}<Icon name="arrow" size={17} /></button>
               </BottomActions>
             </div>
           )}
@@ -565,7 +560,17 @@ export default function TicketWapas() {
                 <div><span className="rule-ok"><Icon name="check" size={15} /></span><p><b>{tr("Physical counter ticket confirmed", "भौतिक काउंटर टिकट की पुष्टि हुई")}</b><small>{tr("The ticket type is eligible for this journey", "इस यात्रा के लिए टिकट का प्रकार योग्य है")}</small></p></div>
                 <div><span className="rule-ok"><Icon name="check" size={15} /></span><p><b>{tr("No earlier refund found", "पहले का कोई रिफंड नहीं मिला")}</b><small>{tr("This ticket can continue", "यह टिकट आगे बढ़ सकती है")}</small></p></div>
               </div>
-              <div className="plain-language"><b>{tr("Why this decision?", "यह निर्णय क्यों?")}</b><p>{tr("The result uses the details you confirmed and a mocked cancellation record. The ticket reader does not approve or calculate the refund.", "यह परिणाम आपकी पुष्टि की गई जानकारी और नकली रद्दीकरण रिकॉर्ड पर आधारित है। टिकट रीडर रिफंड को मंज़ूर या उसकी गणना नहीं करता।")}</p></div>
+              <details className="verification-details">
+                <summary>{tr("How we check a refund", "रिफंड की जाँच कैसे होती है")}</summary>
+                <ol>
+                  <li><span><Icon name="ticket" size={17} /></span><p><b>{tr("Ticket record", "टिकट रिकॉर्ड")}</b><small>{tr("Match the ticket to an authorised PRS record.", "टिकट को अधिकृत PRS रिकॉर्ड से मिलाएँ।")}</small></p></li>
+                  <li><span><Icon name="route" size={17} /></span><p><b>{tr("Train status", "ट्रेन की स्थिति")}</b><small>{tr("Check cancellation and any later restoration for this date and route.", "इस तारीख और मार्ग के लिए रद्दीकरण और बाद की बहाली जाँचें।")}</small></p></li>
+                  <li><span><Icon name="check" size={17} /></span><p><b>{tr("Refund rule", "रिफंड नियम")}</b><small>{tr("Apply the published deadline and amount rule.", "प्रकाशित समय-सीमा और राशि का नियम लागू करें।")}</small></p></li>
+                  <li><span><Icon name="shield" size={17} /></span><p><b>{tr("Ticket holder", "टिकट धारक")}</b><small>{tr("Check the booking mobile and original paper ticket.", "बुकिंग मोबाइल और मूल कागज़ी टिकट जाँचें।")}</small></p></li>
+                  <li><span><Icon name="wallet" size={17} /></span><p><b>{tr("Refund destination", "रिफंड का स्थान")}</b><small>{tr("Use the original payment source first; verify a new destination only when needed.", "पहले मूल भुगतान स्रोत इस्तेमाल करें; ज़रूरत पर ही नया खाता जाँचें।")}</small></p></li>
+                </ol>
+                <p className="simulation-disclosure">{tr("Prototype demonstration: Railway, OTP and payment responses are simulated.", "प्रोटोटाइप प्रदर्शन: रेलवे, OTP और भुगतान के उत्तर नकली हैं।")}</p>
+              </details>
               <BottomActions><button className="primary-button" onClick={() => go("otp")}>{tr("Verify ticket ownership", "टिकट का मालिकाना सत्यापित करें")}<Icon name="arrow" /></button></BottomActions>
             </div>
           )}
@@ -579,7 +584,32 @@ export default function TicketWapas() {
               <div className="demo-code"><span><Icon name="sparkle" size={16} /> {tr("DEMO CODE", "डेमो कोड")}</span><b>271406</b><button onClick={() => setOtp(["2", "7", "1", "4", "0", "6"])}>{tr("Fill code", "कोड भरें")}</button></div>
               <p className="attempt-note"><Icon name="shield" size={16} /> {tr("3 attempts maximum · code expires in 10 minutes", "अधिकतम 3 कोशिशें · कोड 10 मिनट में समाप्त होगा")}</p>
               <button className="phone-help" onClick={() => go("assisted")}><Icon name="phone" size={19} /><span><b>{tr("I no longer have access to this number", "अब यह नंबर मेरे पास नहीं है")}</b><small>{tr("Get an assisted verification reference", "सहायता से सत्यापन का संदर्भ पाएँ")}</small></span><Icon name="arrow" size={18} /></button>
-              <BottomActions><button className="primary-button" disabled={otp.join("") !== "271406"} onClick={() => go("payout")}>{tr("Verify code", "कोड सत्यापित करें")}<Icon name="arrow" /></button></BottomActions>
+              <BottomActions><button className="primary-button" disabled={otp.join("") !== "271406"} onClick={() => go("handover")}>{tr("Verify code", "कोड सत्यापित करें")}<Icon name="arrow" /></button></BottomActions>
+            </div>
+          )}
+
+          {screen === "handover" && (
+            <div className="screen">
+              {!handoverRecorded ? (
+                <>
+                  <div className="screen-heading"><p className="eyebrow">{tr("ORIGINAL TICKET HANDOVER · SIMULATED", "मूल टिकट सौंपना · नकली")}</p><h1>{tr("How will you hand over the paper ticket?", "कागज़ी टिकट कैसे सौंपेंगे?")}</h1><p>{tr("The current refund process requires the original ticket. A photo alone cannot replace it.", "मौजूदा रिफंड प्रक्रिया में मूल टिकट ज़रूरी है। केवल तस्वीर उसकी जगह नहीं ले सकती।")}</p></div>
+                  <div className="handover-options" role="radiogroup" aria-label={tr("Original ticket handover method", "मूल टिकट सौंपने का तरीका")}>
+                    <button role="radio" aria-checked={handover === "pickup"} className={handover === "pickup" ? "selected" : ""} onClick={() => setHandover("pickup")}><span><Icon name="route" /></span><p><b>{tr("Authorised pickup", "अधिकृत पिकअप")}</b><small>{tr("A proposed Railway-authorised agent collects it and gives a receipt.", "प्रस्तावित रेलवे-अधिकृत प्रतिनिधि टिकट लेकर रसीद देता है।")}</small></p><i /></button>
+                    <button role="radio" aria-checked={handover === "counter"} className={handover === "counter" ? "selected" : ""} onClick={() => setHandover("counter")}><span><Icon name="ticket" /></span><p><b>{tr("PRS counter handover", "PRS काउंटर पर सौंपें")}</b><small>{tr("Pre-check online, then only hand over the original at an authorised counter.", "ऑनलाइन जाँच के बाद अधिकृत काउंटर पर केवल मूल टिकट सौंपें।")}</small></p><i /></button>
+                  </div>
+                  <div className="plain-language"><b>{tr("Why is this needed?", "यह क्यों ज़रूरी है?")}</b><p>{tr("It prevents the same paper ticket from being used or refunded twice. Fully digital surrender would need Railway approval and a PRS rule change.", "इससे एक ही कागज़ी टिकट दोबारा इस्तेमाल या रिफंड नहीं हो सकती। पूरी डिजिटल प्रक्रिया के लिए रेलवे की मंज़ूरी और PRS नियम में बदलाव चाहिए।")}</p></div>
+                  <BottomActions><button className="primary-button" onClick={() => setHandoverRecorded(true)}>{handover === "pickup" ? tr("Simulate authorised pickup", "अधिकृत पिकअप का नमूना चलाएँ") : tr("Simulate counter handover", "काउंटर पर सौंपने का नमूना चलाएँ")}<Icon name="arrow" /></button></BottomActions>
+                </>
+              ) : (
+                <div className="handover-success">
+                  <div className="success-orbit paid"><span><Icon name="check" size={34} /></span></div>
+                  <p className="eyebrow">{tr("HANDOVER RECEIPT TW-HO-824", "सौंपने की रसीद TW-HO-824")}</p>
+                  <h1>{tr("Original ticket handover recorded.", "मूल टिकट सौंपना दर्ज हो गया।")}</h1>
+                  <p className="hero-sub">{handover === "pickup" ? tr("The simulated authorised pickup is complete.", "नकली अधिकृत पिकअप पूरा हो गया।") : tr("The simulated PRS counter handover is complete.", "नकली PRS काउंटर हैंडओवर पूरा हो गया।")}</p>
+                  <div className="simulation-disclosure"><Icon name="info" size={17} />{tr("No ticket was collected and no Railway system was contacted in this prototype.", "इस प्रोटोटाइप में कोई टिकट नहीं ली गई और किसी रेलवे सिस्टम से संपर्क नहीं हुआ।")}</div>
+                  <BottomActions><button className="primary-button" onClick={() => go("payout")}>{tr("Continue to refund destination", "रिफंड के स्थान पर आगे बढ़ें")}<Icon name="arrow" /></button></BottomActions>
+                </div>
+              )}
             </div>
           )}
 
@@ -617,14 +647,15 @@ export default function TicketWapas() {
 
           {screen === "payout" && (
             <div className="screen">
-              <div className="screen-heading"><p className="eyebrow">{tr("CHOOSE REFUND ACCOUNT", "रिफंड खाता चुनें")}</p><h1>{tr(`Where should ₹${ticketData.fare.toLocaleString("en-IN")} go?`, `₹${ticketData.fare.toLocaleString("en-IN")} कहाँ भेजें?`)}</h1><p>{tr("Choose where you want to receive the refund. All details below are masked and synthetic.", "रिफंड पाने का तरीका चुनें। नीचे दी गई सभी जानकारियाँ छिपी हुई और नकली हैं।")}</p></div>
+              <div className="screen-heading"><p className="eyebrow">{tr("CASH-PAID TICKET · SIMULATED RECORD", "नकद भुगतान टिकट · नकली रिकॉर्ड")}</p><h1>{tr(`Where should ₹${ticketData.fare.toLocaleString("en-IN")} go?`, `₹${ticketData.fare.toLocaleString("en-IN")} कहाँ भेजें?`)}</h1><p>{tr("A new destination is needed because this sample ticket was paid in cash.", "नया खाता इसलिए ज़रूरी है क्योंकि इस नमूना टिकट का भुगतान नकद हुआ था।")}</p></div>
+              <div className="original-payment"><Icon name="wallet" size={19} /><span><small>{tr("ORIGINAL PAYMENT FOUND", "मूल भुगतान मिला")}</small><b>{tr("Cash at PRS counter", "PRS काउंटर पर नकद")}</b></span></div>
               <div className="method-tabs" role="tablist" aria-label={tr("Refund destination", "रिफंड का स्थान")}><button role="tab" aria-selected={payout === "upi"} className={payout === "upi" ? "active" : ""} onClick={() => setPayout("upi")}><Icon name="phone" />UPI</button><button role="tab" aria-selected={payout === "bank"} className={payout === "bank" ? "active" : ""} onClick={() => setPayout("bank")}><Icon name="wallet" />{tr("Bank account", "बैंक खाता")}</button></div>
               {payout === "upi" ? (
-                <div className="payout-card selected"><span className="radio-dot" /><div><small>UPI ID</small><b>asha.rail@okaxis</b><p>{tr("Account name: Asha P.", "खाते का नाम: आशा P.")}</p></div><span className="verified-badge"><Icon name="check" size={13} /> {tr("VERIFIED", "सत्यापित")}</span></div>
+                <div className="payout-card selected"><span className="radio-dot" /><div><small>UPI ID</small><b>asha.rail@okaxis</b><p>{tr("Bank-returned name: Asha P.", "बैंक से मिला नाम: आशा P.")}</p></div><span className="verified-badge"><Icon name="check" size={13} /> {tr("NAME FOUND", "नाम मिला")}</span></div>
               ) : (
-                <div className="payout-card selected"><span className="radio-dot" /><div><small>{tr("BANK ACCOUNT", "बैंक खाता")}</small><b>{tr("State Bank", "स्टेट बैंक")} · •••• 1842</b><p>{tr("Account name: Asha P.", "खाते का नाम: आशा P.")}</p></div><span className="verified-badge"><Icon name="check" size={13} /> {tr("VERIFIED", "सत्यापित")}</span></div>
+                <div className="payout-card selected"><span className="radio-dot" /><div><small>{tr("BANK ACCOUNT", "बैंक खाता")}</small><b>{tr("State Bank", "स्टेट बैंक")} · •••• 1842</b><p>{tr("Bank-returned name: Asha P.", "बैंक से मिला नाम: आशा P.")}</p></div><span className="verified-badge"><Icon name="check" size={13} /> {tr("NAME FOUND", "नाम मिला")}</span></div>
               )}
-              <div className="recipient-check"><Icon name="shield" /><div><b>{tr("Refund name checked", "रिफंड खाते का नाम जाँचा गया")}</b><p>{tr("The name on the mock refund account matches the booking contact.", "नकली रिफंड खाते का नाम बुकिंग संपर्क से मेल खाता है।")}</p></div></div>
+              <div className="recipient-check"><Icon name="shield" /><div><b>{tr("Destination and claimant checked separately", "खाता और दावेदार अलग-अलग जाँचे गए")}</b><p>{tr("The mock bank confirmed the destination name. OTP and original-ticket handover confirmed the claimant.", "नकली बैंक ने खाते का नाम बताया। OTP और मूल टिकट सौंपने से दावेदार की पुष्टि हुई।")}</p></div></div>
               <div className="privacy-note"><Icon name="lock" size={18} /><span>{tr("Only masked, synthetic payment details are used in this prototype.", "इस प्रोटोटाइप में केवल छिपी हुई, नकली भुगतान जानकारी इस्तेमाल होती है।")}</span></div>
               <BottomActions><button className="primary-button" onClick={() => go("review")}>{tr("Review refund", "रिफंड की जाँच करें")}<Icon name="arrow" /></button></BottomActions>
             </div>
@@ -634,7 +665,7 @@ export default function TicketWapas() {
             <div className="screen">
               <div className="screen-heading"><p className="eyebrow">{tr("FINAL REVIEW", "अंतिम जाँच")}</p><h1>{tr("Ready to start the refund.", "रिफंड शुरू करने के लिए तैयार।")}</h1><p>{tr("Nothing is paid until this final confirmation. Review the facts and consent below.", "अंतिम पुष्टि से पहले कोई भुगतान नहीं होगा। नीचे जानकारी और सहमति जाँचें।")}</p></div>
               <div className="refund-total"><span><small>{tr("FULL REFUND", "पूरा रिफंड")}</small><b>₹{ticketData.fare.toLocaleString("en-IN")}</b></span><span className="no-fee">₹0 {tr("fee", "शुल्क")}</span></div>
-              <div className="review-list"><div><span>{tr("Ticket", "टिकट")}</span><b>PNR {ticketData.pnr}</b></div><div><span>{tr("Journey", "यात्रा")}</span><b>{ticketData.origin} → {ticketData.destination}</b></div><div><span>{tr("Journey date", "यात्रा की तारीख")}</span><b>{formatJourneyDate(ticketData.date, lang)}</b></div><div><span>{tr("Cancellation", "रद्दीकरण")}</span><b className="green-text"><Icon name="check" size={14} /> {tr("Cancellation found", "रद्दीकरण मिला")}</b></div><div><span>{tr("Ownership", "मालिकाना")}</span><b className="green-text"><Icon name="check" size={14} /> {tr("OTP confirmed", "OTP की पुष्टि हुई")}</b></div><div><span>{tr("Refund account", "रिफंड खाता")}</span><b>{payout === "upi" ? "asha.rail@okaxis" : "SBI · •••• 1842"}</b></div></div>
+              <div className="review-list"><div><span>{tr("Ticket", "टिकट")}</span><b>PNR {ticketData.pnr}</b></div><div><span>{tr("Journey", "यात्रा")}</span><b>{ticketData.origin} → {ticketData.destination}</b></div><div><span>{tr("Journey date", "यात्रा की तारीख")}</span><b>{formatJourneyDate(ticketData.date, lang)}</b></div><div><span>{tr("Cancellation", "रद्दीकरण")}</span><b className="green-text"><Icon name="check" size={14} /> {tr("Cancellation found", "रद्दीकरण मिला")}</b></div><div><span>{tr("Ownership", "मालिकाना")}</span><b className="green-text"><Icon name="check" size={14} /> {tr("OTP confirmed", "OTP की पुष्टि हुई")}</b></div><div><span>{tr("Original ticket", "मूल टिकट")}</span><b className="green-text"><Icon name="check" size={14} /> {tr("Handover recorded", "सौंपना दर्ज हुआ")}</b></div><div><span>{tr("Refund account", "रिफंड खाता")}</span><b>{payout === "upi" ? "asha.rail@okaxis" : "SBI · •••• 1842"}</b></div></div>
               <button className="edit-link" onClick={() => go("details")}><Icon name="back" size={16} /> {tr("Edit ticket details", "टिकट की जानकारी बदलें")}</button>
               <label className="consent-row"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span><b>{tr("I confirm these details are correct.", "मैं पुष्टि करता/करती हूँ कि यह जानकारी सही है।")}</b><small>{tr("I agree to use these details to create one refund request for this journey.", "मैं इस यात्रा के लिए एक रिफंड अनुरोध बनाने में इस जानकारी के उपयोग से सहमत हूँ।")}</small></span></label>
               <div className="lock-preview"><Icon name="lock" /><div><b>{tr("We check for an existing refund first", "हम पहले पुराने रिफंड की जाँच करते हैं")}</b><p>{tr("This prevents the same ticket from being refunded twice, even if the button is tapped again.", "बटन दोबारा दबने पर भी इससे एक ही टिकट का दो बार रिफंड नहीं होता।")}</p></div></div>
@@ -652,6 +683,7 @@ export default function TicketWapas() {
               <div className="timeline">
                 <div className="complete"><i><Icon name="check" size={13} /></i><span><b>{tr("Refund request created", "रिफंड अनुरोध बना")}</b><small>{tr("24 Aug · 10:41:08", "24 अगस्त · 10:41:08")}</small></span></div>
                 <div className="complete"><i><Icon name="check" size={13} /></i><span><b>{tr("Mock cancellation confirmed", "नकली रद्दीकरण की पुष्टि हुई")}</b><small>{tr("24 Aug · 10:41:09", "24 अगस्त · 10:41:09")}</small></span></div>
+                <div className="complete"><i><Icon name="check" size={13} /></i><span><b>{tr("Original-ticket handover recorded", "मूल टिकट सौंपना दर्ज हुआ")}</b><small>{tr("Simulated receipt TW-HO-824", "नकली रसीद TW-HO-824")}</small></span></div>
                 <div className={paid ? "complete" : "current"}><i>{paid ? <Icon name="check" size={13} /> : <span />}</i><span><b>{paid ? tr("Paid to selected account", "चुने खाते में भुगतान हुआ") : tr("Refund ready to send", "रिफंड भेजने के लिए तैयार")}</b><small>{paid ? tr("Payment reference 4268•••914", "भुगतान संदर्भ 4268•••914") : tr("Complete the mock payment below", "नीचे नकली भुगतान पूरा करें")}</small></span></div>
               </div>
               <BottomActions>

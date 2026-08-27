@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
 
 type QueueStatus = "new" | "review" | "approved" | "paid";
@@ -27,12 +27,17 @@ const applications: Application[] = [
 ];
 
 const statusLabel: Record<QueueStatus, string> = { new: "NEW", review: "NEEDS REVIEW", approved: "APPROVED", paid: "PAID" };
+const demoCredentials = { username: "refund.officer", password: "Demo@824" } as const;
 
 function Mark() {
   return <span className="portal-mark" aria-hidden="true"><i /><i /><b /></span>;
 }
 
 export default function AuthorityDashboard() {
+  const [authenticated, setAuthenticated] = useState(false);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [authError, setAuthError] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState(applications[0].id);
@@ -44,10 +49,70 @@ export default function AuthorityDashboard() {
   const previousSelection = applications.find((application) => application.id === selectedId) ?? applications[0];
   const selected = filtered.find((application) => application.id === selectedId) ?? filtered[0] ?? previousSelection;
 
+  function signIn(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (username.trim().toLowerCase() === demoCredentials.username && password === demoCredentials.password) {
+      setAuthError("");
+      setAuthenticated(true);
+      window.scrollTo({ top: 0, behavior: "auto" });
+      return;
+    }
+    setAuthError("Those credentials do not match the mock officer account. Use the sample credentials shown below.");
+  }
+
+  function fillDemoCredentials() {
+    setUsername(demoCredentials.username);
+    setPassword(demoCredentials.password);
+    setAuthError("");
+  }
+
+  function signOut() {
+    setAuthenticated(false);
+    setUsername("");
+    setPassword("");
+    setAuthError("");
+    setFilter("all");
+    setQuery("");
+    setSelectedId(applications[0].id);
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }
+
+  if (!authenticated) {
+    return (
+      <main className="site-shell authority-shell authority-login-shell">
+        <div className="service-strip"><span>REFUND OPERATIONS · रिफंड संचालन</span><b>Authorised staff access</b></div>
+        <header className="topbar authority-topbar"><Link className="brand-button" href="/" aria-label="Ticket Wapas citizen service"><Mark /><span className="brand-copy"><b>TICKET WAPAS</b><small>REFUND OPERATIONS</small></span></Link><div className="header-actions"><Link className="account-link" href="/">Citizen service</Link></div></header>
+
+        <div className="authority-login-workspace">
+          <section className="authority-login-card">
+            <div className="authority-login-intro"><span className="authority-lock" aria-hidden="true">✓</span><div><p className="eyebrow">AUTHORISED STAFF ACCESS</p><h1>Sign in to refund operations</h1><p>Review citizen refund applications, pending checks and payment status.</p></div></div>
+
+            <form className="authority-login-form" onSubmit={signIn}>
+              <label><span>OFFICER USERNAME</span><input aria-label="Officer username" autoCapitalize="none" autoComplete="username" spellCheck={false} placeholder="Enter username" value={username} onChange={(event) => { setUsername(event.target.value); setAuthError(""); }} /></label>
+              <label><span>PASSWORD</span><input aria-label="Officer password" autoComplete="current-password" placeholder="Enter password" type="password" value={password} onChange={(event) => { setPassword(event.target.value); setAuthError(""); }} /></label>
+              {authError && <p className="authority-login-error" role="alert">{authError}</p>}
+              <button className="primary-button" type="submit" disabled={!username.trim() || !password}>Sign in securely →</button>
+            </form>
+
+            <aside className="authority-demo-credentials" aria-label="Mock authority credentials">
+              <div><p className="eyebrow">MOCK CREDENTIALS FOR REVIEW</p><b>Use this account to test the authority journey</b></div>
+              <dl><div><dt>Username</dt><dd>{demoCredentials.username}</dd></div><div><dt>Password</dt><dd>{demoCredentials.password}</dd></div></dl>
+              <button type="button" onClick={fillDemoCredentials}>Fill mock credentials</button>
+            </aside>
+
+            <p className="authority-login-note"><b>Protected operations view</b><span>Personal and payment information is masked. This account has review access only.</span></p>
+          </section>
+        </div>
+
+        <footer className="site-footer authority-footer"><b>Ticket Wapas · Refund operations</b><span>Independent prototype using synthetic data. No real Railway system or refund is connected. Not affiliated with Indian Railways, IRCTC or the Government of India.</span><span><Link href="/service-information">Service information</Link> · <Link href="/status">Citizen refund sign-in</Link></span></footer>
+      </main>
+    );
+  }
+
   return (
     <main className="site-shell authority-shell">
       <div className="service-strip"><span>REFUND OPERATIONS · रिफंड संचालन</span><b>Application status and review queue</b></div>
-      <header className="topbar authority-topbar"><Link className="brand-button" href="/" aria-label="Ticket Wapas citizen service"><Mark /><span className="brand-copy"><b>TICKET WAPAS</b><small>REFUND OPERATIONS</small></span></Link><div className="header-actions"><span className="operator-badge"><i>RO</i><span><b>Refund officer</b><small>Review access</small></span></span><Link className="account-link" href="/">Citizen service</Link></div></header>
+      <header className="topbar authority-topbar"><Link className="brand-button" href="/" aria-label="Ticket Wapas citizen service"><Mark /><span className="brand-copy"><b>TICKET WAPAS</b><small>REFUND OPERATIONS</small></span></Link><div className="header-actions"><span className="operator-badge"><i>RO</i><span><b>Refund officer</b><small>Review access</small></span></span><button className="account-link authority-signout" type="button" onClick={signOut}>Sign out</button><Link className="account-link" href="/">Citizen service</Link></div></header>
 
       <div className="authority-workspace">
         <div className="authority-heading"><div><p className="eyebrow">APPLICATION QUEUE</p><h1>Refund applications</h1><p>Review the status of citizen requests without exposing ticket images, mobile numbers or full payment details.</p></div><span className="last-sync">Data updated<br /><b>27 Aug 2026 · 12:20 PM</b></span></div>

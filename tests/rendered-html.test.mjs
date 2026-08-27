@@ -135,19 +135,34 @@ test("server-renders a citizen sign-in for later refund tracking", async () => {
   assert.match(html, /do not enter your real mobile number/i);
 });
 
-test("server-renders the separate authority operations queue", async () => {
+test("server-renders a mock authority sign-in before the operations queue", async () => {
   const app = await worker();
   const response = await app.fetch(new Request("http://localhost/authority", { headers: { accept: "text/html" } }), env, context);
 
   assert.equal(response.status, 200);
   const html = await response.text();
-  assert.match(html, /Refund applications/);
   assert.match(html, /REFUND OPERATIONS/);
-  assert.match(html, /View-only access/);
-  assert.match(html, /TW-UTS-HELP-219/);
-  assert.match(html, /NEEDS REVIEW/);
-  assert.match(html, /Masked destination only/);
-  assert.match(html, /Role permissions/);
+  assert.match(html, /Sign in to refund operations/);
+  assert.match(html, /MOCK CREDENTIALS FOR REVIEW/);
+  assert.match(html, /refund\.officer/);
+  assert.match(html, /Demo@824/);
+  assert.match(html, /Fill mock credentials/);
+  assert.match(html, /Sign in securely/);
+  assert.doesNotMatch(html, /Refund applications/);
+});
+
+test("keeps the authority queue and sign-out flow behind the mock sign-in", async () => {
+  const client = await readFile(new URL("../app/authority/authority-dashboard.tsx", import.meta.url), "utf8");
+
+  assert.match(client, /useState\(false\)/);
+  assert.match(client, /username:\s*"refund\.officer"/);
+  assert.match(client, /password:\s*"Demo@824"/);
+  assert.match(client, /Refund applications/);
+  assert.match(client, /TW-UTS-HELP-219/);
+  assert.match(client, /NEEDS REVIEW/);
+  assert.match(client, /Masked destination only/);
+  assert.match(client, /Role permissions/);
+  assert.match(client, /Sign out/);
 });
 
 test("server-renders public service details with process and sources", async () => {

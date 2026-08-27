@@ -416,16 +416,7 @@ button:disabled { cursor: not-allowed; }
 .authority-login-form input::placeholder { color: #798892; font-weight: 500; }
 .authority-login-form .primary-button { margin-top: 3px; }
 .authority-login-error { margin: 0; padding: 10px 12px; border-left: 4px solid #a33f24; background: #fff4ef; color: #87331d; font-size: 10px; font-weight: 750; line-height: 1.45; }
-.authority-demo-credentials { margin-top: 22px; padding: 17px; border-left: 4px solid var(--orange); background: var(--paper); }
-.authority-demo-credentials > div > .eyebrow { margin-bottom: 5px; color: var(--orange-dark); }
-.authority-demo-credentials > div > b { font-size: 11px; }
-.authority-demo-credentials dl { margin: 14px 0 12px; border-top: 1px solid var(--line); }
-.authority-demo-credentials dl > div { min-height: 40px; padding: 8px 0; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 15px; }
-.authority-demo-credentials dt { color: var(--muted); font-size: 9px; }
-.authority-demo-credentials dd { margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ink); font-size: 11px; font-weight: 850; }
-.authority-demo-credentials button { width: 100%; min-height: 42px; border: 1px solid #82958d; background: white; color: #075c9c; font-size: 11px; font-weight: 850; cursor: pointer; }
-.authority-demo-credentials button:hover { background: #f6faf8; }
-.authority-login-note { margin: 20px 0 0; display: grid; gap: 4px; color: var(--muted); font-size: 9px; line-height: 1.5; }
+.authority-login-note { margin: 18px 0 0; padding-top: 16px; border-top: 1px solid var(--line); display: grid; gap: 4px; color: var(--muted); font-size: 9px; line-height: 1.5; }
 .authority-login-note b { color: var(--green); font-size: 10px; }
 .authority-signout { cursor: pointer; }
 .operator-badge { display: flex; align-items: center; gap: 8px; }.operator-badge > i { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--mint); color: var(--green); font-size: 10px; font-style: normal; font-weight: 900; }.operator-badge > span { display: grid; gap: 2px; }.operator-badge b { font-size: 11px; }.operator-badge small { color: var(--muted); font-size: 9px; }

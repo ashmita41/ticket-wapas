@@ -6,7 +6,7 @@ Ticket Wapas helps passengers who bought a physical railway counter ticket and t
 
 Our prototype makes this one guided mobile journey. An OpenAI model rejects unrelated images, classifies PRS/UTS tickets and extracts only printed fields. Citizens confirm critical identifiers; product rules—not AI—check simulated cancellation and duplicate-refund state. PRS ownership uses a mock booking-mobile OTP plus fresh ticket-possession proof. UTS never invents a PNR or booking mobile: a train-specific synthetic ticket can complete special cancellation, while an ordinary route ticket stops for the required alternate-service check. Eligible samples continue to synthetic payout and tracking.
 
-The main citizen journey works end to end. Unrelated uploads are rejected without advancing, unreadable fields can be corrected manually, critical identifiers require citizen confirmation, and duplicate protection is visible before the mocked payout begins. Citizens can later sign in with a visible demo OTP to reopen status; a separate authority area uses visible mock officer credentials before showing masked applications. All tickets, railway responses, OTPs, identities and payments are synthetic and clearly labelled.
+The main citizen journey works end to end. Unrelated uploads are rejected without advancing, unreadable fields can be corrected manually, critical identifiers require citizen confirmation, and duplicate protection is visible before the mocked payout begins. Citizens can later sign in with a visible demo OTP to reopen status; a separate authority area uses a prefilled sample officer login before showing masked applications. All tickets, railway responses, OTPs, identities and payments are synthetic and clearly labelled.
 
 Ticket Wapas is simpler because it keeps the citizen in one bilingual, mobile-first flow; safer because every critical detail is confirmed before the refund starts; and more resilient because failed or unclear ticket reading always has an honest manual path.
 
@@ -26,7 +26,7 @@ Ticket Wapas is simpler because it keeps the citizen in one bilingual, mobile-fi
 - **1:00–1:14:** Explain the real gap: automatic e-ticket refunds versus a physical return journey for some counter-ticket cases.
 - **1:14–1:29:** Show the architecture: OpenAI structured ticket extraction, deterministic eligibility, ownership verification, claim lock, payment adapter and audit trail.
 - **1:29–1:42:** Return to ticket capture and briefly show the General/UTS sample: no PNR, no booking-mobile OTP and a separate special-cancellation rule.
-- **1:42–1:52:** Show that citizens can later sign in to reopen status, then use the visible mock officer credentials to open the separate authority queue.
+- **1:42–1:52:** Show that citizens can later sign in to reopen status, then use the prefilled officer login to open the separate authority queue.
 - **1:52–2:00:** Explain the synthetic-data boundary, then close: “The refund moves to the passenger instead of making the passenger travel for it.”
 
 ## Final submission checklist

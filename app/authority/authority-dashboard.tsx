@@ -35,8 +35,8 @@ function Mark() {
 
 export default function AuthorityDashboard() {
   const [authenticated, setAuthenticated] = useState(false);
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [username, setUsername] = useState(demoCredentials.username);
+  const [password, setPassword] = useState(demoCredentials.password);
   const [authError, setAuthError] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
@@ -60,16 +60,10 @@ export default function AuthorityDashboard() {
     setAuthError("Those credentials do not match the mock officer account. Use the sample credentials shown below.");
   }
 
-  function fillDemoCredentials() {
-    setUsername(demoCredentials.username);
-    setPassword(demoCredentials.password);
-    setAuthError("");
-  }
-
   function signOut() {
     setAuthenticated(false);
-    setUsername("");
-    setPassword("");
+    setUsername(demoCredentials.username);
+    setPassword(demoCredentials.password);
     setAuthError("");
     setFilter("all");
     setQuery("");
@@ -93,12 +87,6 @@ export default function AuthorityDashboard() {
               {authError && <p className="authority-login-error" role="alert">{authError}</p>}
               <button className="primary-button" type="submit" disabled={!username.trim() || !password}>Sign in securely →</button>
             </form>
-
-            <aside className="authority-demo-credentials" aria-label="Mock authority credentials">
-              <div><p className="eyebrow">MOCK CREDENTIALS FOR REVIEW</p><b>Use this account to test the authority journey</b></div>
-              <dl><div><dt>Username</dt><dd>{demoCredentials.username}</dd></div><div><dt>Password</dt><dd>{demoCredentials.password}</dd></div></dl>
-              <button type="button" onClick={fillDemoCredentials}>Fill mock credentials</button>
-            </aside>
 
             <p className="authority-login-note"><b>Protected operations view</b><span>Personal and payment information is masked. This account has review access only.</span></p>
           </section>

@@ -143,11 +143,9 @@ test("server-renders a mock authority sign-in before the operations queue", asyn
   const html = await response.text();
   assert.match(html, /REFUND OPERATIONS/);
   assert.match(html, /Sign in to refund operations/);
-  assert.match(html, /MOCK CREDENTIALS FOR REVIEW/);
   assert.match(html, /refund\.officer/);
-  assert.match(html, /Demo@824/);
-  assert.match(html, /Fill mock credentials/);
   assert.match(html, /Sign in securely/);
+  assert.doesNotMatch(html, /MOCK CREDENTIALS FOR REVIEW|Use this account to test the authority journey|Fill mock credentials/);
   assert.doesNotMatch(html, /Refund applications/);
 });
 

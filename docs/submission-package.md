@@ -1,10 +1,10 @@
 # Ticket Wapas — submission package
 
-## Project summary (208 words)
+## Project summary (229 words)
 
-Ticket Wapas helps passengers who bought a physical PRS railway counter ticket and then had their train cancelled by Railways. E-ticket refunds can be automatic, but a counter-ticket passenger may still need to return to a PRS counter—another journey after the original journey has already failed.
+Ticket Wapas helps passengers who bought a physical railway counter ticket and then had their service cancelled by Railways. E-ticket refunds can be automatic, but a counter-ticket passenger may still need another counter visit after the original journey has already failed.
 
-Our prototype turns that fragmented process into one guided mobile journey. The citizen uses a synthetic ticket image or enters its details manually. An OpenAI model first rejects unrelated images, then extracts only printed fields and marks anything unclear or missing. The citizen can edit every value and must confirm the critical identifiers; fixed product rules—not AI—then check a simulated Railway cancellation record, ticket type and duplicate-claim ledger. Ownership is verified using a mock OTP sent to the booking mobile, followed by a synthetic UPI or bank payout and an auditable refund tracker.
+Our prototype turns that fragmented process into one guided mobile journey. An OpenAI model rejects unrelated images, distinguishes reserved PRS tickets from unreserved UTS tickets and extracts only printed fields. The citizen confirms every critical identifier; fixed product rules—not AI—then check a simulated Railway cancellation record and duplicate-refund state. PRS ownership uses a mock booking-mobile OTP plus fresh ticket-possession proof. UTS never invents a PNR or booking mobile: a train-specific synthetic ticket can complete special cancellation, while an ordinary route ticket stops for the required alternate-service check. Eligible samples continue to a synthetic UPI or bank payout and refund tracker.
 
 The main citizen journey works end to end. Unrelated uploads are rejected without advancing, unreadable fields can be corrected manually, critical identifiers require citizen confirmation, and duplicate protection is visible before the mocked payout begins. All tickets, railway responses, OTPs, identities and payments are synthetic and clearly labelled.
 
@@ -25,7 +25,7 @@ Ticket Wapas is simpler because it keeps the citizen in one bilingual, mobile-fi
 
 - **1:00–1:14:** Explain the real gap: automatic e-ticket refunds versus a physical return journey for some counter-ticket cases.
 - **1:14–1:29:** Show the architecture: OpenAI structured ticket extraction, deterministic eligibility, ownership verification, claim lock, payment adapter and audit trail.
-- **1:29–1:42:** Return to ticket capture and show that an unrelated image is rejected without advancing, with clear retry and manual-entry choices.
+- **1:29–1:42:** Return to ticket capture and briefly show the General/UTS sample: no PNR, no booking-mobile OTP and a separate special-cancellation rule.
 - **1:42–1:52:** Explain safety: synthetic data, no government APIs, no official branding, server-only API key and no stored ticket image.
 - **1:52–2:00:** “Ticket Wapas shows how a refund can move to the passenger, instead of making the passenger travel for the refund.”
 
@@ -44,7 +44,7 @@ Ticket Wapas is simpler because it keeps the citizen in one bilingual, mobile-fi
 
 | Brief requirement | Prototype evidence | Status |
 |---|---|---|
-| One clearly defined problem | Cancelled-journey refund for a physical PRS counter ticket | Meets |
+| One clearly defined problem | Cancelled-service refund for a physical railway counter ticket, with the correct PRS/UTS route | Meets |
 | Complete citizen journey | Capture → editable confirmation → eligibility → ownership → payout → editable final review → tracking | Meets |
 | Simpler than the current experience | One guided flow with plain-language decisions, visible progress and recovery at every input failure | Meets |
 | Indian users and mobile | Bilingual public-service header; single-column phone forms; native date picker; large controls; manual fallback | Meets |

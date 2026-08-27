@@ -6,8 +6,8 @@ Purpose: product and prototype decisions, not legal advice or an operational Rai
 ## Executive product decisions
 
 1. **Do not treat every counter ticket as a PNR ticket.** The first deterministic decision is ticket type: reserved PRS or unreserved UTS.
-2. **Keep the primary end-to-end prototype focused on reserved PRS counter tickets.** This is the clearest documented physical-return problem and the strongest fit for the existing journey.
-3. **Recognise UTS/general tickets and route them correctly.** Do not reject them as “not a ticket,” ask for a PNR, or promise a train-cancellation refund. Most UTS tickets are not tied to a berth or one train.
+2. **Keep reserved PRS as the primary story, with a correct UTS branch.** A synthetic train-specific UTS ticket may complete special cancellation; an ordinary route ticket must stop for the alternate-service check.
+3. **Recognise UTS/general tickets and route them correctly.** Do not reject them as “not a ticket,” ask for a PNR, use booking-mobile OTP, or promise a train-cancellation refund without the special-cancellation condition.
 4. **A ticket photo is an input, not proof of ownership.** AI may classify and extract; official records and deterministic rules decide eligibility.
 5. **Prefer refund to the original payment source.** Ask for a new UPI/bank destination only for cash-paid tickets or a documented failure of the original route.
 6. **Do not auto-pay when the booking mobile is unavailable, the original ticket cannot be proven, the train was cancelled and restored, or payment ownership does not match.** Create an assisted-review reference instead.
@@ -134,14 +134,14 @@ Therefore Ticket Wapas must not show “full refund available” to a UTS holder
 
 1. Detect or let the citizen select “General/UTS ticket — no PNR.”
 2. Extract UTS number, stations, class, issue date/time, passenger count and fare.
-3. Ask whether the ticket was issued for a specific train and whether an alternate permitted train was available.
+3. Read the train number only when printed. If none is printed, treat it as an ordinary route ticket and require an authorised alternate-service check.
 4. Show one of:
    - normal unused-ticket cancellation window;
    - possible special cancellation, needs authorised verification;
    - not eligible because the normal window expired/another train remains available;
    - assisted review because service disruption details are inconclusive.
 
-For the competition prototype, this should be a correct triage path rather than a second full payment implementation.
+For the competition prototype, the synthetic train-specific UTS sample completes possession proof, simulated irreversible UTS cancellation and payout. An ordinary route-based UTS ticket creates a clearly labelled verification reference and does not start a refund.
 
 ## 6. How refund destination verification should work
 
@@ -374,7 +374,7 @@ IRCTC's Principal Service Provider web-services programme is designed for author
 | What replaces original paper surrender? | Nothing in the published current process: even after online/139 cancellation, the original paper ticket must be surrendered for refund/accountal | Proposed digital surrender: a fresh one-time photo adds possession evidence, then an authorised PRS write irreversibly cancels the ticket, blocks travel/duplicate refund and issues a receipt. Railway approval and a rule/process change are required; the photo alone never voids the ticket | Let the citizen complete this proposed digital journey end to end. Clearly simulate the photo match and authoritative cancellation response, and state that no live Railway record was changed |
 | What if the booking mobile is unavailable? | Online/139 cancellation requires the booking mobile. Counter and exceptional-refund procedures rely on the original ticket; some exceptional procedures require a booked person to appear with identity proof | Assisted verification: original ticket plus a named adult passenger/applicant and approved identity/declaration at an authorised point. No instant remote payout from PNR/photo alone | Create a help reference and complete a simulated assisted-verification appointment; do not ask for real Aadhaar/PAN |
 | Who receives a multi-passenger cash refund? | Published rules describe party/partial eligibility, but do not publish a clear national rule allowing an arbitrary digital nominee for a cash-paid counter ticket | Prefer recorded payer/applicant if available. Otherwise require a Railway-approved lead-claimant rule: one named adult passenger, whole-PNR declaration and one destination; partial, minor, deceased or disputed claims go to manual review | Full synthetic group claim can select one named adult lead claimant; partial/group exception is clearly sent to review |
-| How does UTS special cancellation work across zones? | Official training describes UTS “special cancellation” option 13 for >3-hour delay/cancellation when only one practical service exists or the ticket is train-specific. Special cancellation is recorded and requires competent-authority control | Integrate with UTS plus the local duty/station approval workflow and a versioned zone/circular rules catalogue; do not assume every cancelled train qualifies | Recognise UTS number and explain possible special cancellation, then simulate referral to the issuing/cluster station rather than automatic payout |
+| How does UTS special cancellation work across zones? | Official training describes UTS “special cancellation” option 13 for >3-hour delay/cancellation when only one practical service exists or the ticket is train-specific. Special cancellation is recorded and requires competent-authority control | Integrate with UTS plus the local duty/station approval workflow and a versioned zone/circular rules catalogue; do not assume every cancelled train qualifies | Complete a clearly labelled synthetic train-specific UTS sample; create a verification reference, not a refund, for an ordinary route ticket |
 
 ### Citizen-facing explanation
 

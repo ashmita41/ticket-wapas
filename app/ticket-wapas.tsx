@@ -16,13 +16,15 @@ type Screen =
 
 type Lang = "en" | "hi";
 type Payout = "upi" | "bank";
+type TicketType = "prs" | "uts";
 type SurrenderStage = "ready" | "matched" | "recorded";
 type ConfidenceStatus = "extracted" | "unclear" | "missing";
-type RequiredTicketField = "pnr" | "trainNumber" | "date" | "origin" | "destination" | "fare";
+type RequiredTicketField = "identifier" | "trainNumber" | "date" | "origin" | "destination" | "fare";
 type AnalysisState = "idle" | "reading" | "done" | "fallback" | "rejected";
 
 type TicketData = {
-  pnr: string;
+  ticketType: TicketType;
+  identifier: string;
   trainNumber: string;
   trainName: string;
   date: string;
@@ -35,10 +37,11 @@ type TicketData = {
 };
 
 type ExtractedTicketPayload = {
-  documentType?: "prs_counter_ticket" | "not_ticket" | "unclear";
+  documentType?: "prs_counter_ticket" | "uts_counter_ticket" | "not_ticket" | "unclear";
   documentConfidence?: "high" | "medium" | "low";
   documentNotes?: string;
   pnr?: string | null;
+  utsNumber?: string | null;
   trainNumber?: string | null;
   trainName?: string | null;
   date?: string | null;
@@ -47,11 +50,12 @@ type ExtractedTicketPayload = {
   passengers?: number | null;
   fare?: number | null;
   mobile?: string | null;
-  confidence?: Partial<Record<RequiredTicketField, ConfidenceStatus>>;
+  confidence?: Partial<Record<"pnr" | "utsNumber" | Exclude<RequiredTicketField, "identifier">, ConfidenceStatus>>;
 };
 
 const ticket: TicketData = {
-  pnr: "2468135790",
+  ticketType: "prs",
+  identifier: "2468135790",
   trainNumber: "12424",
   trainName: "Rajdhani Express",
   date: "2026-08-24",
@@ -61,7 +65,7 @@ const ticket: TicketData = {
   fare: 4860,
   mobile: "+91 •••••• 2714",
   confidence: {
-    pnr: "extracted",
+    identifier: "extracted",
     trainNumber: "extracted",
     date: "extracted",
     origin: "extracted",
@@ -70,25 +74,49 @@ const ticket: TicketData = {
   },
 };
 
-const emptyTicket: TicketData = {
-  pnr: "",
-  trainNumber: "",
-  trainName: "",
-  date: "",
-  origin: "",
-  destination: "",
-  passengers: 0,
-  fare: 0,
+const utsTicket: TicketData = {
+  ticketType: "uts",
+  identifier: "UTS7A4K219",
+  trainNumber: "12056",
+  trainName: "Jan Shatabdi",
+  date: "2026-08-24",
+  origin: "New Delhi",
+  destination: "Dehradun",
+  passengers: 1,
+  fare: 165,
   mobile: null,
   confidence: {
-    pnr: "missing",
-    trainNumber: "missing",
-    date: "missing",
-    origin: "missing",
-    destination: "missing",
-    fare: "missing",
+    identifier: "extracted",
+    trainNumber: "extracted",
+    date: "extracted",
+    origin: "extracted",
+    destination: "extracted",
+    fare: "extracted",
   },
 };
+
+function emptyTicket(ticketType: TicketType): TicketData {
+  return {
+    ticketType,
+    identifier: "",
+    trainNumber: "",
+    trainName: "",
+    date: "",
+    origin: "",
+    destination: "",
+    passengers: 0,
+    fare: 0,
+    mobile: null,
+    confidence: {
+      identifier: "missing",
+      trainNumber: "missing",
+      date: "missing",
+      origin: "missing",
+      destination: "missing",
+      fare: "missing",
+    },
+  };
+}
 
 const screens: Screen[] = ["home", "capture", "details", "eligibility", "otp", "surrender", "payout", "review", "tracking"];
 
@@ -156,11 +184,12 @@ function StatusPill({ status, lang }: { status: "extracted" | "unclear" | "missi
   return <span className={`status-pill ${status}`}>{status === "extracted" && <Icon name="check" size={12} />}{label}</span>;
 }
 
-function Field({ label, value, lang, status = "extracted", onChange, type = "text", inputMode, maxLength, placeholder, hint, error }: {
+function Field({ label, value, lang, status = "extracted", optional = false, onChange, type = "text", inputMode, maxLength, placeholder, hint, error }: {
   label: string;
   value: string;
   lang: Lang;
   status?: ConfidenceStatus;
+  optional?: boolean;
   onChange: (value: string) => void;
   type?: "text" | "date" | "number";
   inputMode?: "text" | "numeric" | "decimal";
@@ -171,7 +200,7 @@ function Field({ label, value, lang, status = "extracted", onChange, type = "tex
 }) {
   return (
     <label className={`data-field ${status} ${error ? "has-error" : ""}`}>
-      <span className="field-label">{label}<StatusPill status={status} lang={lang} /></span>
+      <span className="field-label">{label}{optional ? <span className="status-pill optional">{lang === "hi" ? "वैकल्पिक" : "OPTIONAL"}</span> : <StatusPill status={status} lang={lang} />}</span>
       <input aria-label={label} type={type} inputMode={inputMode} maxLength={maxLength} placeholder={placeholder} value={value} onChange={(event) => onChange(event.target.value)} />
       {(error || hint) && <small className={error ? "field-error" : "field-hint"}>{error ?? hint}</small>}
     </label>
@@ -226,8 +255,10 @@ function formatJourneyDate(value: string, lang: Lang) {
 function normaliseExtractedTicket(raw: ExtractedTicketPayload): TicketData {
   const text = (value: string | null | undefined) => typeof value === "string" ? value.trim() : "";
   const numeric = (value: number | null | undefined) => typeof value === "number" && Number.isFinite(value) ? value : 0;
+  const ticketType: TicketType = raw.documentType === "uts_counter_ticket" ? "uts" : "prs";
   const values = {
-    pnr: text(raw.pnr),
+    ticketType,
+    identifier: ticketType === "uts" ? text(raw.utsNumber) : text(raw.pnr),
     trainNumber: text(raw.trainNumber),
     trainName: text(raw.trainName),
     date: normaliseJourneyDate(raw.date),
@@ -238,7 +269,7 @@ function normaliseExtractedTicket(raw: ExtractedTicketPayload): TicketData {
     mobile: text(raw.mobile) || null,
   };
   const hasValue: Record<RequiredTicketField, boolean> = {
-    pnr: values.pnr.length > 0,
+    identifier: values.identifier.length > 0,
     trainNumber: values.trainNumber.length > 0,
     date: values.date.length > 0,
     origin: values.origin.length > 0,
@@ -248,7 +279,11 @@ function normaliseExtractedTicket(raw: ExtractedTicketPayload): TicketData {
   const confidence = Object.fromEntries(
     (Object.keys(hasValue) as RequiredTicketField[]).map((key) => [
       key,
-      hasValue[key] ? (raw.confidence?.[key] ?? "extracted") : "missing",
+      hasValue[key]
+        ? (key === "identifier"
+          ? raw.confidence?.[ticketType === "uts" ? "utsNumber" : "pnr"] ?? "extracted"
+          : raw.confidence?.[key] ?? "extracted")
+        : "missing",
     ]),
   ) as Record<RequiredTicketField, ConfidenceStatus>;
   return { ...values, confidence };
@@ -269,31 +304,39 @@ export default function TicketWapas() {
   const [retrying, setRetrying] = useState(false);
   const [assistanceMobile, setAssistanceMobile] = useState("");
   const [assistanceCreated, setAssistanceCreated] = useState(false);
+  const [utsReviewCreated, setUtsReviewCreated] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const c = dictionary[lang];
   const tr = (english: string, hindi: string) => lang === "hi" ? hindi : english;
-  const screenIndex = screen === "assisted" ? screens.indexOf("otp") : screens.indexOf(screen);
-  const journeyStepCount = screens.length - 1;
+  const activeScreens = ticketData.ticketType === "uts" ? screens.filter((item) => item !== "otp") : screens;
+  const screenIndex = screen === "assisted" ? activeScreens.indexOf("otp") : activeScreens.indexOf(screen);
+  const journeyStepCount = activeScreens.length - 1;
 
   const effectiveConfidence = ticketData.confidence;
-  const confidentFieldCount = Object.values(effectiveConfidence).filter((status) => status === "extracted").length;
+  const requiredTicketFields: RequiredTicketField[] = ticketData.ticketType === "uts"
+    ? ["identifier", "date", "origin", "destination", "fare"]
+    : ["identifier", "trainNumber", "date", "origin", "destination", "fare"];
+  const confidentFieldCount = requiredTicketFields.filter((field) => effectiveConfidence[field] === "extracted").length;
+  const requiredFieldCount = requiredTicketFields.length;
   const effectiveTrainNumber = ticketData.trainNumber;
+  const isTrainSpecificUts = ticketData.ticketType === "uts" && /^\d{5}$/.test(effectiveTrainNumber);
   const fieldErrors: Partial<Record<RequiredTicketField, string>> = {
-    ...(!/^\d{10}$/.test(ticketData.pnr) ? { pnr: tr("Enter the 10-digit PNR printed on the ticket.", "टिकट पर छपा 10 अंकों का PNR भरें।") } : {}),
-    ...(!/^\d{5}$/.test(effectiveTrainNumber) ? { trainNumber: tr("Enter the 5-digit train number.", "5 अंकों का ट्रेन नंबर भरें।") } : {}),
+    ...(ticketData.ticketType === "prs" && !/^\d{10}$/.test(ticketData.identifier) ? { identifier: tr("Enter the 10-digit PNR printed on the ticket.", "टिकट पर छपा 10 अंकों का PNR भरें।") } : {}),
+    ...(ticketData.ticketType === "uts" && !/^[A-Z0-9]{10}$/i.test(ticketData.identifier) ? { identifier: tr("Enter the 10-character UTS number printed on the ticket.", "टिकट पर छपा 10 अक्षरों का UTS नंबर भरें।") } : {}),
+    ...(ticketData.ticketType === "prs" && !/^\d{5}$/.test(effectiveTrainNumber) ? { trainNumber: tr("Enter the 5-digit train number.", "5 अंकों का ट्रेन नंबर भरें।") } : {}),
     ...(!isValidJourneyDate(ticketData.date) ? { date: tr("Choose the journey date in DD/MM/YYYY format.", "यात्रा की तारीख DD/MM/YYYY में चुनें।") } : {}),
     ...(ticketData.origin.trim().length < 2 ? { origin: tr("Enter the boarding station name or code.", "चढ़ने वाले स्टेशन का नाम या कोड भरें।") } : {}),
     ...(ticketData.destination.trim().length < 2 ? { destination: tr("Enter the destination station name or code.", "गंतव्य स्टेशन का नाम या कोड भरें।") } : {}),
     ...(!(ticketData.fare > 0) ? { fare: tr("Enter the fare printed on the ticket.", "टिकट पर छपा किराया भरें।") } : {}),
   };
   const requiredFieldsReady =
-    /^\d{10}$/.test(ticketData.pnr) &&
-    /^\d{5}$/.test(effectiveTrainNumber) &&
+    (ticketData.ticketType === "prs" ? /^\d{10}$/.test(ticketData.identifier) : /^[A-Z0-9]{10}$/i.test(ticketData.identifier)) &&
+    (ticketData.ticketType === "uts" || /^\d{5}$/.test(effectiveTrainNumber)) &&
     isValidJourneyDate(ticketData.date) &&
     ticketData.origin.trim().length >= 2 &&
     ticketData.destination.trim().length >= 2 &&
     ticketData.fare > 0 &&
-    Object.values(effectiveConfidence).every((status) => status === "extracted");
+    requiredTicketFields.every((field) => effectiveConfidence[field] === "extracted");
   useEffect(() => {
     document.documentElement.lang = lang === "hi" ? "hi" : "en";
   }, [lang]);
@@ -312,6 +355,7 @@ export default function TicketWapas() {
     setRetrying(false);
     setAssistanceMobile("");
     setAssistanceCreated(false);
+    setUtsReviewCreated(false);
   }
 
   function go(next: Screen) {
@@ -325,14 +369,15 @@ export default function TicketWapas() {
       return;
     }
     const index = Math.max(0, screenIndex - 1);
-    go(screens[index]);
+    go(activeScreens[index]);
   }
 
-  function runSample() {
+  function runSample(ticketType: TicketType) {
     setAnalysis("reading");
     setCaptureMessage("");
     setTicketConfirmed(false);
-    setTicketData(ticket);
+    setUtsReviewCreated(false);
+    setTicketData(ticketType === "uts" ? utsTicket : ticket);
     window.setTimeout(() => {
       setAnalysis("done");
       go("details");
@@ -340,21 +385,29 @@ export default function TicketWapas() {
   }
 
   function startManualEntry() {
-    setTicketData(emptyTicket);
+    setTicketData(emptyTicket("prs"));
     setTicketConfirmed(false);
     setCaptureMessage("");
+    setUtsReviewCreated(false);
     go("details");
   }
 
+  function selectTicketType(ticketType: TicketType) {
+    if (ticketData.ticketType === ticketType) return;
+    setTicketData(emptyTicket(ticketType));
+    setTicketConfirmed(false);
+    setUtsReviewCreated(false);
+  }
+
   function updateTicketField(field: RequiredTicketField, value: string) {
-    const cleaned = field === "pnr"
-      ? value.replace(/\D/g, "").slice(0, 10)
+    const cleaned = field === "identifier"
+      ? (ticketData.ticketType === "prs" ? value.replace(/\D/g, "") : value.replace(/[^A-Z0-9]/gi, "").toUpperCase()).slice(0, 10)
       : field === "trainNumber"
         ? value.replace(/\D/g, "").slice(0, 5)
         : value.trimStart();
     const numericFare = field === "fare" ? Number(cleaned.replace(/[^0-9.]/g, "")) : 0;
-    const isValid = field === "pnr"
-      ? /^\d{10}$/.test(cleaned)
+    const isValid = field === "identifier"
+      ? (ticketData.ticketType === "prs" ? /^\d{10}$/.test(cleaned) : /^[A-Z0-9]{10}$/.test(cleaned))
       : field === "trainNumber"
         ? /^\d{5}$/.test(cleaned)
         : field === "date"
@@ -408,7 +461,7 @@ export default function TicketWapas() {
           : tr("The ticket reader is temporarily unavailable. Try again or enter the details manually.", "टिकट रीडर अभी उपलब्ध नहीं है। फिर कोशिश करें या जानकारी खुद भरें।")));
         return;
       }
-      if (data.ticket?.documentType !== "prs_counter_ticket") {
+      if (!new Set(["prs_counter_ticket", "uts_counter_ticket"]).has(data.ticket?.documentType ?? "")) {
         setAnalysis("rejected");
         setCaptureMessage(tr("This image does not look like a physical railway counter ticket. Upload a clear synthetic counter-ticket image.", "यह तस्वीर भौतिक रेलवे काउंटर टिकट नहीं लगती। साफ़ नकली काउंटर टिकट की तस्वीर अपलोड करें।"));
         return;
@@ -465,7 +518,7 @@ export default function TicketWapas() {
               </div>
               <div className="home-requirements" aria-label={tr("What you need", "क्या चाहिए")}>
                 <span><Icon name="ticket" size={18} /><p><b>{tr("Original paper ticket", "मूल कागज़ी टिकट")}</b><small>{tr("Keep it with you", "इसे अपने पास रखें")}</small></p></span>
-                <span><Icon name="phone" size={18} /><p><b>{tr("Booking mobile", "बुकिंग वाला मोबाइल")}</b><small>{tr("For ownership check", "मालिकाना जाँच के लिए")}</small></p></span>
+                <span><Icon name="file" size={18} /><p><b>{tr("PNR or UTS number", "PNR या UTS नंबर")}</b><small>{tr("We detect the ticket type", "हम टिकट का प्रकार पहचानते हैं")}</small></p></span>
               </div>
               <p className="home-help">{tr("No login required · Usually takes about 2 minutes", "लॉगिन की ज़रूरत नहीं · आमतौर पर लगभग 2 मिनट")}</p>
             </div>
@@ -490,30 +543,32 @@ export default function TicketWapas() {
                   <button onClick={startManualEntry}>{tr("Enter details manually", "जानकारी खुद भरें")}</button>
                 </div>
               )}
-              <div className="or-divider"><span>{tr("or try the sample ticket", "या नमूना टिकट आज़माएँ")}</span></div>
-              <div className="sample-row"><span className="sample-ticket-icon"><Icon name="file" size={24} /></span><div><span className="sample-badge">{tr("SYNTHETIC", "नकली")}</span><b>Rajdhani · NDLS → DBRT</b><small>PNR 2468135790</small></div></div>
-              <BottomActions>
-                <button className="text-button" onClick={runSample} disabled={analysis === "reading"}>{analysis === "reading" ? tr("Reading sample…", "नमूना पढ़ा जा रहा है…") : tr("Use the sample ticket", "नमूना टिकट इस्तेमाल करें")}<Icon name="arrow" size={17} /></button>
-              </BottomActions>
+              <div className="or-divider"><span>{tr("or try a sample ticket", "या नमूना टिकट आज़माएँ")}</span></div>
+              <div className="sample-options">
+                <button onClick={() => runSample("prs")} disabled={analysis === "reading"}><span className="sample-ticket-icon"><Icon name="file" size={22} /></span><p><small>{tr("RESERVED · SYNTHETIC", "आरक्षित · नकली")}</small><b>Rajdhani · NDLS → DBRT</b><em>PNR 2468135790</em></p><Icon name="arrow" size={17} /></button>
+                <button onClick={() => runSample("uts")} disabled={analysis === "reading"}><span className="sample-ticket-icon"><Icon name="ticket" size={22} /></span><p><small>{tr("UNRESERVED UTS · SYNTHETIC", "अनारक्षित UTS · नकली")}</small><b>Jan Shatabdi · NDLS → DDN</b><em>UTS7A4K219 · {tr("No PNR", "PNR नहीं")}</em></p><Icon name="arrow" size={17} /></button>
+              </div>
             </div>
           )}
 
           {screen === "details" && (
             <div className="screen">
               <div className="screen-heading"><p className="eyebrow">{tr("CHECK AND CORRECT", "जाँचें और सुधारें")}</p><h1>{confidentFieldCount === 0 ? tr("Enter your ticket details.", "टिकट की जानकारी भरें।") : tr("Check every detail before continuing.", "आगे बढ़ने से पहले हर जानकारी जाँचें।")}</h1><p>{tr("The ticket reader can make mistakes. Compare these values with the printed ticket and edit anything that is wrong.", "टिकट रीडर से गलती हो सकती है। छपी टिकट से जानकारी मिलाएँ और जो गलत हो उसे सुधारें।")}</p></div>
-              <div className="reader-summary"><span className="reader-icon"><Icon name="sparkle" /></span><div><b>{confidentFieldCount === 6 ? tr("All 6 required details were found", "सभी 6 ज़रूरी जानकारियाँ मिल गईं") : tr(`${confidentFieldCount} of 6 required details were found`, `6 में से ${confidentFieldCount} ज़रूरी जानकारियाँ मिलीं`)}</b><p>{tr("Every field is editable, and you stay in control.", "हर जानकारी बदली जा सकती है और नियंत्रण आपके पास है।")}</p></div></div>
+              <div className="ticket-type-tabs" role="tablist" aria-label={tr("Paper ticket type", "कागज़ी टिकट का प्रकार")}><button role="tab" aria-selected={ticketData.ticketType === "prs"} className={ticketData.ticketType === "prs" ? "active" : ""} onClick={() => selectTicketType("prs")}><b>{tr("Reserved ticket", "आरक्षित टिकट")}</b><small>{tr("Has a PNR", "PNR होता है")}</small></button><button role="tab" aria-selected={ticketData.ticketType === "uts"} className={ticketData.ticketType === "uts" ? "active" : ""} onClick={() => selectTicketType("uts")}><b>{tr("General / UTS", "जनरल / UTS")}</b><small>{tr("No PNR", "PNR नहीं होता")}</small></button></div>
+              {ticketData.ticketType === "uts" && <div className="ticket-type-notice"><Icon name="info" size={18} /><p><b>{tr("Unreserved UTS ticket found", "अनारक्षित UTS टिकट मिली")}</b><span>{tr("This ticket has a UTS number instead of a PNR. A booking mobile is not expected.", "इस टिकट पर PNR की जगह UTS नंबर होता है। बुकिंग मोबाइल की उम्मीद नहीं की जाती।")}</span></p></div>}
+              <div className="reader-summary"><span className="reader-icon"><Icon name="sparkle" /></span><div><b>{confidentFieldCount === requiredFieldCount ? tr(`All ${requiredFieldCount} required details were found`, `सभी ${requiredFieldCount} ज़रूरी जानकारियाँ मिल गईं`) : tr(`${confidentFieldCount} of ${requiredFieldCount} required details were found`, `${requiredFieldCount} में से ${confidentFieldCount} ज़रूरी जानकारियाँ मिलीं`)}</b><p>{tr("Every field is editable, and you stay in control.", "हर जानकारी बदली जा सकती है और नियंत्रण आपके पास है।")}</p></div></div>
               <div className="field-grid">
-                <Field lang={lang} label="PNR" value={ticketData.pnr} status={effectiveConfidence.pnr} inputMode="numeric" maxLength={10} placeholder={tr("10-digit PNR", "10 अंकों का PNR")} error={fieldErrors.pnr} onChange={(value) => updateTicketField("pnr", value)} />
-                <Field lang={lang} label={tr("TRAIN NUMBER", "ट्रेन नंबर")} value={effectiveTrainNumber} status={effectiveConfidence.trainNumber} inputMode="numeric" maxLength={5} placeholder={tr("5-digit train number", "5 अंकों का ट्रेन नंबर")} error={fieldErrors.trainNumber} onChange={(value) => updateTicketField("trainNumber", value)} />
+                <Field lang={lang} label={ticketData.ticketType === "uts" ? tr("UTS NUMBER", "UTS नंबर") : "PNR"} value={ticketData.identifier} status={effectiveConfidence.identifier} inputMode={ticketData.ticketType === "prs" ? "numeric" : "text"} maxLength={10} placeholder={ticketData.ticketType === "uts" ? tr("10-character UTS number", "10 अक्षरों का UTS नंबर") : tr("10-digit PNR", "10 अंकों का PNR")} error={fieldErrors.identifier} onChange={(value) => updateTicketField("identifier", value)} />
+                <Field lang={lang} label={ticketData.ticketType === "uts" ? tr("TRAIN NUMBER (IF PRINTED)", "ट्रेन नंबर (अगर छपा हो)") : tr("TRAIN NUMBER", "ट्रेन नंबर")} value={effectiveTrainNumber} status={effectiveConfidence.trainNumber} optional={ticketData.ticketType === "uts"} inputMode="numeric" maxLength={5} placeholder={ticketData.ticketType === "uts" ? tr("Optional for most UTS tickets", "अधिकतर UTS टिकटों में वैकल्पिक") : tr("5-digit train number", "5 अंकों का ट्रेन नंबर")} error={fieldErrors.trainNumber} hint={ticketData.ticketType === "uts" ? tr("Optional unless issued for one train", "किसी खास ट्रेन के लिए हो तभी ज़रूरी") : undefined} onChange={(value) => updateTicketField("trainNumber", value)} />
                 <Field lang={lang} label={tr("JOURNEY DATE", "यात्रा की तारीख")} value={ticketData.date} status={effectiveConfidence.date} type="date" error={fieldErrors.date} hint="DD/MM/YYYY" onChange={(value) => updateTicketField("date", value)} />
                 <Field lang={lang} label={tr("FROM STATION", "किस स्टेशन से")} value={ticketData.origin} status={effectiveConfidence.origin} placeholder={tr("e.g. New Delhi or NDLS", "जैसे नई दिल्ली या NDLS")} error={fieldErrors.origin} onChange={(value) => updateTicketField("origin", value)} />
                 <Field lang={lang} label={tr("TO STATION", "किस स्टेशन तक")} value={ticketData.destination} status={effectiveConfidence.destination} placeholder={tr("e.g. Dibrugarh or DBRT", "जैसे डिब्रूगढ़ या DBRT")} error={fieldErrors.destination} onChange={(value) => updateTicketField("destination", value)} />
                 <Field lang={lang} label={tr("TICKET FARE (₹)", "टिकट का किराया (₹)")} value={ticketData.fare > 0 ? String(ticketData.fare) : ""} status={effectiveConfidence.fare} type="number" inputMode="decimal" placeholder={tr("Fare paid", "दिया गया किराया")} error={fieldErrors.fare} onChange={(value) => updateTicketField("fare", value)} />
-                <Field lang={lang} label={tr("TRAIN NAME (OPTIONAL)", "ट्रेन का नाम (वैकल्पिक)")} value={ticketData.trainName} status={ticketData.trainName ? "extracted" : "missing"} placeholder={tr("As printed on ticket", "जैसा टिकट पर छपा है")} hint={tr("Optional", "वैकल्पिक")} onChange={(value) => updateOptionalTicketField("trainName", value)} />
-                <Field lang={lang} label={tr("PASSENGERS (OPTIONAL)", "यात्री (वैकल्पिक)")} value={ticketData.passengers > 0 ? String(ticketData.passengers) : ""} status={ticketData.passengers > 0 ? "extracted" : "missing"} type="number" inputMode="numeric" placeholder={tr("Number of passengers", "यात्रियों की संख्या")} hint={tr("Optional", "वैकल्पिक")} onChange={(value) => updateOptionalTicketField("passengers", value)} />
+                <Field lang={lang} label={tr("TRAIN NAME", "ट्रेन का नाम")} value={ticketData.trainName} status={ticketData.trainName ? "extracted" : "missing"} optional placeholder={tr("As printed on ticket", "जैसा टिकट पर छपा है")} hint={tr("Optional", "वैकल्पिक")} onChange={(value) => updateOptionalTicketField("trainName", value)} />
+                <Field lang={lang} label={tr("PASSENGERS", "यात्री")} value={ticketData.passengers > 0 ? String(ticketData.passengers) : ""} status={ticketData.passengers > 0 ? "extracted" : "missing"} optional type="number" inputMode="numeric" placeholder={tr("Number of passengers", "यात्रियों की संख्या")} hint={tr("Optional", "वैकल्पिक")} onChange={(value) => updateOptionalTicketField("passengers", value)} />
               </div>
-              {!requiredFieldsReady && <div className="inline-notice"><Icon name="alert" /><p><b>{tr("Complete the marked fields to continue.", "आगे बढ़ने के लिए चिन्हित जानकारी पूरी करें।")}</b>{tr("Use the exact PNR, five-digit train number and journey details printed on the ticket.", "टिकट पर छपे सही PNR, पाँच अंकों के ट्रेन नंबर और यात्रा की जानकारी भरें।")}</p></div>}
-              <label className="confirmation-check"><input type="checkbox" checked={ticketConfirmed} disabled={!requiredFieldsReady} onChange={(event) => setTicketConfirmed(event.target.checked)} /><span><b>{tr("I checked the PNR, train number and journey date.", "मैंने PNR, ट्रेन नंबर और यात्रा की तारीख जाँच ली है।")}</b><small>{requiredFieldsReady ? tr("These three values match the printed ticket.", "ये तीनों जानकारियाँ छपी टिकट से मेल खाती हैं।") : tr("Complete the marked fields first.", "पहले चिन्हित जानकारी पूरी करें।")}</small></span></label>
+              {!requiredFieldsReady && <div className="inline-notice"><Icon name="alert" /><p><b>{tr("Complete the marked fields to continue.", "आगे बढ़ने के लिए चिन्हित जानकारी पूरी करें।")}</b>{ticketData.ticketType === "uts" ? tr("Use the exact UTS number, journey date and route printed on the ticket.", "टिकट पर छपे सही UTS नंबर, यात्रा की तारीख और मार्ग भरें।") : tr("Use the exact PNR, five-digit train number and journey details printed on the ticket.", "टिकट पर छपे सही PNR, पाँच अंकों के ट्रेन नंबर और यात्रा की जानकारी भरें।")}</p></div>}
+              <label className="confirmation-check"><input type="checkbox" checked={ticketConfirmed} disabled={!requiredFieldsReady} onChange={(event) => setTicketConfirmed(event.target.checked)} /><span><b>{ticketData.ticketType === "uts" ? tr("I checked the UTS number, journey date and route.", "मैंने UTS नंबर, यात्रा की तारीख और मार्ग जाँच लिया है।") : tr("I checked the PNR, train number and journey date.", "मैंने PNR, ट्रेन नंबर और यात्रा की तारीख जाँच ली है।")}</b><small>{requiredFieldsReady ? tr("These details match the printed ticket.", "ये जानकारियाँ छपी टिकट से मेल खाती हैं।") : tr("Complete the marked fields first.", "पहले चिन्हित जानकारी पूरी करें।")}</small></span></label>
               <div className="privacy-note"><Icon name="lock" size={18} /><span><b>{tr("Your ticket image is not stored.", "आपकी टिकट की तस्वीर सहेजी नहीं जाती।")}</b> {tr("Only confirmed fields move to the eligibility check.", "केवल पुष्टि की गई जानकारी योग्यता जाँच में जाती है।")}</span></div>
               <BottomActions><button className="primary-button" onClick={() => go("eligibility")} disabled={!requiredFieldsReady || !ticketConfirmed}>{tr("Confirm & check cancellation", "पुष्टि करें और रद्द होने की जाँच करें")}<Icon name="arrow" /></button><button className="text-button" onClick={() => go("capture")}>{tr("Use a different ticket image", "दूसरी टिकट की तस्वीर इस्तेमाल करें")}</button></BottomActions>
             </div>
@@ -521,31 +576,58 @@ export default function TicketWapas() {
 
           {screen === "eligibility" && (
             <div className="screen">
-              <div className="screen-heading"><p className="eyebrow">{tr("ELIGIBILITY CHECK · SIMULATED", "योग्यता जाँच · नकली")}</p><h1>{tr("Full refund is available.", "पूरा रिफंड उपलब्ध है।")}</h1><p>{tr("Your confirmed ticket details match the mocked cancellation record.", "आपकी पुष्टि की गई टिकट जानकारी नकली रद्दीकरण रिकॉर्ड से मेल खाती है।")}</p></div>
-              <div className="decision-card eligible"><span className="decision-icon"><Icon name="check" size={30} /></span><div><small>{tr("ELIGIBLE · 3 OF 3 CHECKS PASSED", "योग्य · 3 में से 3 जाँच पूरी")}</small><strong>₹{ticketData.fare.toLocaleString("en-IN")} {tr("full fare", "पूरा किराया")}</strong><p>{tr("No cancellation charge", "कोई रद्दीकरण शुल्क नहीं")} · {ticketData.passengers > 0 ? tr(`${ticketData.passengers} passengers`, `${ticketData.passengers} यात्री`) : tr("passenger count verified by mock record", "नकली रिकॉर्ड से यात्रियों की संख्या सत्यापित")}</p></div></div>
+              {ticketData.ticketType === "uts" && !isTrainSpecificUts ? (
+                !utsReviewCreated ? (
+                  <>
+                    <div className="screen-heading"><p className="eyebrow">{tr("UTS SERVICE CHECK · SIMULATED", "UTS सेवा जाँच · नकली")}</p><h1>{tr("One more check is needed.", "एक और जाँच ज़रूरी है।")}</h1><p>{tr("This general ticket is valid for a route, not one reserved train. One cancelled train may not make it refundable if another permitted service was available.", "यह जनरल टिकट किसी एक आरक्षित ट्रेन के बजाय मार्ग के लिए मान्य है। अगर दूसरी मान्य सेवा उपलब्ध थी, तो एक ट्रेन रद्द होने से रिफंड तय नहीं होता।")}</p></div>
+                    <div className="decision-card operating"><span className="decision-icon"><Icon name="info" size={28} /></span><div><small>{tr("AUTHORISED UTS CHECK REQUIRED", "अधिकृत UTS जाँच ज़रूरी")}</small><strong>{tr("Refund not started", "रिफंड शुरू नहीं हुआ")}</strong><p>{tr("We will not invent a train link or promise the wrong amount.", "हम ट्रेन का गलत संबंध नहीं बनाएँगे या गलत राशि का वादा नहीं करेंगे।")}</p></div></div>
+                    <div className="rule-list">
+                      <div><span className="rule-ok"><Icon name="check" size={15} /></span><p><b>{tr("Unreserved UTS ticket confirmed", "अनारक्षित UTS टिकट पुष्ट")}</b><small>{ticketData.identifier}</small></p></div>
+                      <div><span className="rule-bad"><Icon name="info" size={15} /></span><p><b>{tr("No specific train printed", "कोई खास ट्रेन नहीं छपी")}</b><small>{tr("The ticket can cover a route or time window", "टिकट किसी मार्ग या समय अवधि के लिए हो सकती है")}</small></p></div>
+                      <div><span className="rule-bad"><Icon name="route" size={15} /></span><p><b>{tr("Alternate-service check pending", "वैकल्पिक सेवा की जाँच बाकी")}</b><small>{tr("An authorised UTS rules service must confirm special cancellation", "अधिकृत UTS नियम सेवा को विशेष रद्दीकरण पुष्ट करना होगा")}</small></p></div>
+                    </div>
+                    <div className="simulation-disclosure"><Icon name="info" size={17} />{tr("Prototype boundary: no live UTS or train-status system was contacted.", "प्रोटोटाइप सीमा: किसी असली UTS या ट्रेन-स्थिति सिस्टम से संपर्क नहीं हुआ।")}</div>
+                    <BottomActions><button className="primary-button" onClick={() => { setUtsReviewCreated(true); window.scrollTo({ top: 0, behavior: "auto" }); }}>{tr("Create UTS verification request", "UTS जाँच अनुरोध बनाएँ")}<Icon name="arrow" /></button><button className="secondary-button" onClick={() => go("details")}>{tr("Edit ticket details", "टिकट की जानकारी बदलें")}</button></BottomActions>
+                  </>
+                ) : (
+                  <div className="assist-success">
+                    <div className="success-orbit paid"><span><Icon name="check" size={34} /></span></div>
+                    <p className="eyebrow">{tr("UTS REFERENCE TW-UTS-HELP-219", "UTS संदर्भ TW-UTS-HELP-219")}</p>
+                    <h1>{tr("Verification request created.", "जाँच अनुरोध बन गया।")}</h1>
+                    <p className="hero-sub">{tr("Your ticket details are saved in this simulated request. A real authorised service would check whether another permitted train remained available before deciding the refund.", "आपकी टिकट की जानकारी इस नकली अनुरोध में सहेजी गई है। वास्तविक अधिकृत सेवा रिफंड तय करने से पहले जाँचेगी कि दूसरी मान्य ट्रेन उपलब्ध थी या नहीं।")}</p>
+                    <div className="plain-language"><b>{tr("No refund was started", "रिफंड शुरू नहीं हुआ")}</b><p>{tr("This protects citizens from an incorrect promise and Railways from refunding a ticket that could still be used on another service.", "यह नागरिकों को गलत वादे से और रेलवे को दूसरी सेवा में उपयोग हो सकने वाली टिकट का गलत रिफंड देने से बचाता है।")}</p></div>
+                    <BottomActions><button className="primary-button" onClick={reset}>{tr("Return to home", "मुख्य पृष्ठ पर जाएँ")}<Icon name="arrow" /></button></BottomActions>
+                  </div>
+                )
+              ) : (
+                <>
+              <div className="screen-heading"><p className="eyebrow">{tr("ELIGIBILITY CHECK · SIMULATED", "योग्यता जाँच · नकली")}</p><h1>{ticketData.ticketType === "uts" ? tr("Special cancellation is available.", "विशेष रद्दीकरण उपलब्ध है।") : tr("Full refund is available.", "पूरा रिफंड उपलब्ध है।")}</h1><p>{ticketData.ticketType === "uts" ? tr("This train-specific UTS ticket matches the simulated special-cancellation record.", "यह ट्रेन-विशिष्ट UTS टिकट नकली विशेष रद्दीकरण रिकॉर्ड से मेल खाती है।") : tr("Your confirmed ticket details match the mocked cancellation record.", "आपकी पुष्टि की गई टिकट जानकारी नकली रद्दीकरण रिकॉर्ड से मेल खाती है।")}</p></div>
+              <div className="decision-card eligible"><span className="decision-icon"><Icon name="check" size={30} /></span><div><small>{ticketData.ticketType === "uts" ? tr("ELIGIBLE · UTS SPECIAL CANCELLATION", "योग्य · UTS विशेष रद्दीकरण") : tr("ELIGIBLE · 3 OF 3 CHECKS PASSED", "योग्य · 3 में से 3 जाँच पूरी")}</small><strong>₹{ticketData.fare.toLocaleString("en-IN")} {ticketData.ticketType === "uts" ? tr("refundable fare", "वापसी योग्य किराया") : tr("full fare", "पूरा किराया")}</strong><p>{ticketData.ticketType === "uts" ? tr("Amount returned by the simulated UTS rule check", "नकली UTS नियम जाँच से मिली राशि") : tr("No cancellation charge", "कोई रद्दीकरण शुल्क नहीं")} · {ticketData.passengers === 1 ? tr("1 passenger", "1 यात्री") : ticketData.passengers > 1 ? tr(`${ticketData.passengers} passengers`, `${ticketData.passengers} यात्री`) : tr("passenger count verified by mock record", "नकली रिकॉर्ड से यात्रियों की संख्या सत्यापित")}</p></div></div>
               <div className="rule-list">
-                <div><span className="rule-ok"><Icon name="check" size={15} /></span><p><b>{tr("Train cancellation found", "ट्रेन रद्द होने की जानकारी मिली")}</b><small>{tr("Mock cancellation record · 23 Aug, 18:42", "नकली रद्दीकरण रिकॉर्ड · 23 अगस्त, 18:42")}</small></p></div>
-                <div><span className="rule-ok"><Icon name="check" size={15} /></span><p><b>{tr("Physical counter ticket confirmed", "भौतिक काउंटर टिकट की पुष्टि हुई")}</b><small>{tr("The ticket type is eligible for this journey", "इस यात्रा के लिए टिकट का प्रकार योग्य है")}</small></p></div>
+                <div><span className="rule-ok"><Icon name="check" size={15} /></span><p><b>{tr("Train cancellation found", "ट्रेन रद्द होने की जानकारी मिली")}</b><small>{ticketData.ticketType === "uts" ? tr("Simulated UTS service record · train-specific ticket", "नकली UTS सेवा रिकॉर्ड · ट्रेन-विशिष्ट टिकट") : tr("Mock cancellation record · 23 Aug, 18:42", "नकली रद्दीकरण रिकॉर्ड · 23 अगस्त, 18:42")}</small></p></div>
+                <div><span className="rule-ok"><Icon name="check" size={15} /></span><p><b>{ticketData.ticketType === "uts" ? tr("Special-cancellation condition met", "विशेष रद्दीकरण की शर्त पूरी") : tr("Physical counter ticket confirmed", "भौतिक काउंटर टिकट की पुष्टि हुई")}</b><small>{ticketData.ticketType === "uts" ? tr("This sample was issued for the cancelled train—not an open route ticket", "यह नमूना रद्द ट्रेन के लिए जारी हुआ था—खुले मार्ग की टिकट नहीं") : tr("The ticket type is eligible for this journey", "इस यात्रा के लिए टिकट का प्रकार योग्य है")}</small></p></div>
                 <div><span className="rule-ok"><Icon name="check" size={15} /></span><p><b>{tr("No earlier refund found", "पहले का कोई रिफंड नहीं मिला")}</b><small>{tr("This ticket can continue", "यह टिकट आगे बढ़ सकती है")}</small></p></div>
               </div>
               <details className="verification-details">
                 <summary>{tr("How we check a refund", "रिफंड की जाँच कैसे होती है")}</summary>
                 <ol>
-                  <li><span><Icon name="ticket" size={17} /></span><p><b>{tr("Ticket record", "टिकट रिकॉर्ड")}</b><small>{tr("Match the ticket to an authorised PRS record.", "टिकट को अधिकृत PRS रिकॉर्ड से मिलाएँ।")}</small></p></li>
+                  <li><span><Icon name="ticket" size={17} /></span><p><b>{tr("Ticket record", "टिकट रिकॉर्ड")}</b><small>{ticketData.ticketType === "uts" ? tr("Match the UTS number and printed details to an authorised UTS record.", "UTS नंबर और छपी जानकारी को अधिकृत UTS रिकॉर्ड से मिलाएँ।") : tr("Match the ticket to an authorised PRS record.", "टिकट को अधिकृत PRS रिकॉर्ड से मिलाएँ।")}</small></p></li>
                   <li><span><Icon name="route" size={17} /></span><p><b>{tr("Train status", "ट्रेन की स्थिति")}</b><small>{tr("Check cancellation and any later restoration for this date and route.", "इस तारीख और मार्ग के लिए रद्दीकरण और बाद की बहाली जाँचें।")}</small></p></li>
-                  <li><span><Icon name="check" size={17} /></span><p><b>{tr("Refund rule", "रिफंड नियम")}</b><small>{tr("Apply the published deadline and amount rule.", "प्रकाशित समय-सीमा और राशि का नियम लागू करें।")}</small></p></li>
-                  <li><span><Icon name="shield" size={17} /></span><p><b>{tr("Ticket holder", "टिकट धारक")}</b><small>{tr("Check the booking mobile and original paper ticket.", "बुकिंग मोबाइल और मूल कागज़ी टिकट जाँचें।")}</small></p></li>
+                  <li><span><Icon name="check" size={17} /></span><p><b>{tr("Refund rule", "रिफंड नियम")}</b><small>{ticketData.ticketType === "uts" ? tr("Check whether the ticket is train-specific or another permitted service remained available.", "जाँचें कि टिकट किसी खास ट्रेन की है या दूसरी मान्य सेवा उपलब्ध थी।") : tr("Apply the published deadline and amount rule.", "प्रकाशित समय-सीमा और राशि का नियम लागू करें।")}</small></p></li>
+                  <li><span><Icon name="shield" size={17} /></span><p><b>{tr("Ticket holder", "टिकट धारक")}</b><small>{ticketData.ticketType === "uts" ? tr("Use the original paper ticket and a fresh one-time photo; there is no booking mobile.", "मूल कागज़ी टिकट और एक नई तस्वीर इस्तेमाल करें; बुकिंग मोबाइल नहीं होता।") : tr("Check the booking mobile and original paper ticket.", "बुकिंग मोबाइल और मूल कागज़ी टिकट जाँचें।")}</small></p></li>
                   <li><span><Icon name="wallet" size={17} /></span><p><b>{tr("Refund destination", "रिफंड का स्थान")}</b><small>{tr("Use the original payment source first; verify a new destination only when needed.", "पहले मूल भुगतान स्रोत इस्तेमाल करें; ज़रूरत पर ही नया खाता जाँचें।")}</small></p></li>
                 </ol>
-                <p className="simulation-disclosure">{tr("Prototype demonstration: Railway, OTP and payment responses are simulated.", "प्रोटोटाइप प्रदर्शन: रेलवे, OTP और भुगतान के उत्तर नकली हैं।")}</p>
+                <p className="simulation-disclosure">{tr("Prototype demonstration: Railway, ticket-record, OTP where applicable and payment responses are simulated.", "प्रोटोटाइप प्रदर्शन: रेलवे, टिकट रिकॉर्ड, जहाँ लागू हो वहाँ OTP और भुगतान के उत्तर नकली हैं।")}</p>
               </details>
-              <BottomActions><button className="primary-button" onClick={() => go("otp")}>{tr("Verify ticket ownership", "टिकट का मालिकाना सत्यापित करें")}<Icon name="arrow" /></button></BottomActions>
+              <BottomActions><button className="primary-button" onClick={() => go(ticketData.ticketType === "uts" ? "surrender" : "otp")}>{ticketData.ticketType === "uts" ? tr("Verify the original ticket", "मूल टिकट सत्यापित करें") : tr("Verify ticket ownership", "टिकट का मालिकाना सत्यापित करें")}<Icon name="arrow" /></button></BottomActions>
+                </>
+              )}
             </div>
           )}
 
           {screen === "otp" && (
             <div className="screen">
-              <div className="screen-heading"><p className="eyebrow">{tr("PROVE OWNERSHIP", "मालिकाना साबित करें")}</p><h1>{tr("Check the booking mobile.", "बुकिंग वाला फ़ोन जाँचें।")}</h1><p>{tr("A 6-digit code was sent to", "6 अंकों का कोड भेजा गया है")} <b>+91 •••••• 2714</b>{tr(", the number captured when this ticket was booked.", " पर, जो टिकट बुक करते समय दिया गया था।")}</p></div>
+              <div className="screen-heading"><p className="eyebrow">{tr("PROVE OWNERSHIP · SIMULATED", "मालिकाना साबित करें · नकली")}</p><h1>{tr("Check the booking mobile.", "बुकिंग वाला फ़ोन जाँचें।")}</h1><p>{tr("The simulated Railway booking record returned", "नकली रेलवे बुकिंग रिकॉर्ड से मिला नंबर है")} <b>+91 •••••• 2714</b>{tr(". A 6-digit code was sent there.", "। इसी पर 6 अंकों का कोड भेजा गया है।")}</p></div>
               <div className="otp-row" aria-label="One-time password">
                 {otp.map((digit, index) => <input key={index} inputMode="numeric" maxLength={1} value={digit} aria-label={tr(`OTP digit ${index + 1}`, `OTP अंक ${index + 1}`)} onChange={(event) => { const copy = [...otp]; copy[index] = event.target.value.replace(/\D/g, ""); setOtp(copy); }} />)}
               </div>
@@ -572,11 +654,12 @@ export default function TicketWapas() {
               )}
               {surrenderStage === "matched" && (
                 <>
-                  <div className="screen-heading"><p className="eyebrow">{tr("PHOTO CHECK COMPLETE · SIMULATED", "तस्वीर की जाँच पूरी · नकली")}</p><h1>{tr("Your ticket is ready to be cancelled.", "आपका टिकट रद्द करने के लिए तैयार है।")}</h1><p>{tr("The fresh photo, ticket details and booking mobile have been matched.", "नई तस्वीर, टिकट की जानकारी और बुकिंग मोबाइल का मिलान हो गया है।")}</p></div>
+                  <div className="screen-heading"><p className="eyebrow">{tr("PHOTO CHECK COMPLETE · SIMULATED", "तस्वीर की जाँच पूरी · नकली")}</p><h1>{tr("Your ticket is ready to be cancelled.", "आपका टिकट रद्द करने के लिए तैयार है।")}</h1><p>{ticketData.ticketType === "uts" ? tr("The fresh photo and printed UTS details match the simulated ticket record.", "नई तस्वीर और छपी UTS जानकारी नकली टिकट रिकॉर्ड से मेल खाती है।") : tr("The fresh photo, ticket details and booking mobile have been matched.", "नई तस्वीर, टिकट की जानकारी और बुकिंग मोबाइल का मिलान हो गया है।")}</p></div>
                   <div className="surrender-match">
                     <span className="rule-ok"><Icon name="check" size={15} /></span>
-                    <p><b>PNR {ticketData.pnr}</b><small>{ticketData.origin} → {ticketData.destination} · {formatJourneyDate(ticketData.date, lang)}</small></p>
+                    <p><b>{ticketData.ticketType === "uts" ? "UTS" : "PNR"} {ticketData.identifier}</b><small>{ticketData.origin} → {ticketData.destination} · {formatJourneyDate(ticketData.date, lang)}</small></p>
                   </div>
+                  {ticketData.ticketType === "uts" && <div className="ticket-type-notice compact"><Icon name="shield" size={18} /><p><b>{tr("No booking-mobile OTP used", "बुकिंग-मोबाइल OTP इस्तेमाल नहीं हुआ")}</b><span>{tr("UTS counter tickets are not linked to a booking mobile. The ticket number, simulated UTS record and fresh possession photo were checked instead.", "UTS काउंटर टिकट बुकिंग मोबाइल से जुड़ी नहीं होती। इसके बजाय टिकट नंबर, नकली UTS रिकॉर्ड और नई तस्वीर जाँची गई।")}</span></p></div>}
                   <div className="surrender-warning"><Icon name="alert" size={20} /><p><b>{tr("This action cannot be undone", "यह कार्रवाई वापस नहीं हो सकती")}</b><span>{tr("After cancellation, the paper ticket cannot be used for travel or another refund.", "रद्द होने के बाद कागज़ी टिकट यात्रा या दूसरे रिफंड के लिए इस्तेमाल नहीं हो सकती।")}</span></p></div>
                   <BottomActions><button className="primary-button" onClick={() => { setSurrenderStage("recorded"); window.scrollTo({ top: 0, behavior: "auto" }); }}>{tr("Cancel ticket digitally", "टिकट ऑनलाइन रद्द करें")}<Icon name="arrow" /></button><button className="secondary-button" onClick={() => { setSurrenderStage("ready"); window.scrollTo({ top: 0, behavior: "auto" }); }}>{tr("Retake demo photo", "डेमो तस्वीर दोबारा लें")}</button></BottomActions>
                 </>
@@ -584,9 +667,9 @@ export default function TicketWapas() {
               {surrenderStage === "recorded" && (
                 <div className="surrender-success">
                   <div className="success-orbit paid"><span><Icon name="check" size={34} /></span></div>
-                  <p className="eyebrow">{tr("DIGITAL SURRENDER RECEIPT TW-DS-824", "डिजिटल समर्पण रसीद TW-DS-824")}</p>
+                  <p className="eyebrow">{ticketData.ticketType === "uts" ? tr("UTS CANCELLATION RECEIPT TW-UTS-824", "UTS रद्दीकरण रसीद TW-UTS-824") : tr("DIGITAL SURRENDER RECEIPT TW-DS-824", "डिजिटल समर्पण रसीद TW-DS-824")}</p>
                   <h1>{tr("Paper ticket cancelled digitally.", "कागज़ी टिकट ऑनलाइन रद्द हो गया।")}</h1>
-                  <p className="hero-sub">{tr("The simulated Railway record now blocks this ticket from travel and another refund.", "नकली रेलवे रिकॉर्ड अब इस टिकट को यात्रा और दूसरे रिफंड के लिए रोकता है।")}</p>
+                  <p className="hero-sub">{ticketData.ticketType === "uts" ? tr("The simulated UTS record now blocks this ticket from travel and another refund.", "नकली UTS रिकॉर्ड अब इस टिकट को यात्रा और दूसरे रिफंड के लिए रोकता है।") : tr("The simulated Railway record now blocks this ticket from travel and another refund.", "नकली रेलवे रिकॉर्ड अब इस टिकट को यात्रा और दूसरे रिफंड के लिए रोकता है।")}</p>
                   <div className="surrender-result"><p><Icon name="check" size={16} />{tr("Ticket marked cancelled", "टिकट रद्द दर्ज हुआ")}</p><p><Icon name="check" size={16} />{tr("Paper ticket made unusable", "कागज़ी टिकट उपयोग के लिए अमान्य हुआ")}</p><p><Icon name="check" size={16} />{tr("Digital receipt issued", "डिजिटल रसीद जारी हुई")}</p></div>
                   <div className="simulation-disclosure"><Icon name="info" size={17} />{tr("Simulation only: no live Railway record was changed. A real service needs authorised Railway access.", "केवल नकली प्रक्रिया: कोई असली रेलवे रिकॉर्ड नहीं बदला। वास्तविक सेवा के लिए रेलवे की अनुमति आवश्यक है।")}</div>
                   <BottomActions><button className="primary-button" onClick={() => go("payout")}>{tr("Continue to refund destination", "रिफंड के स्थान पर आगे बढ़ें")}<Icon name="arrow" /></button></BottomActions>
@@ -630,14 +713,14 @@ export default function TicketWapas() {
           {screen === "payout" && (
             <div className="screen">
               <div className="screen-heading"><p className="eyebrow">{tr("CASH-PAID TICKET · SIMULATED RECORD", "नकद भुगतान टिकट · नकली रिकॉर्ड")}</p><h1>{tr(`Where should ₹${ticketData.fare.toLocaleString("en-IN")} go?`, `₹${ticketData.fare.toLocaleString("en-IN")} कहाँ भेजें?`)}</h1><p>{tr("A new destination is needed because this sample ticket was paid in cash.", "नया खाता इसलिए ज़रूरी है क्योंकि इस नमूना टिकट का भुगतान नकद हुआ था।")}</p></div>
-              <div className="original-payment"><Icon name="wallet" size={19} /><span><small>{tr("ORIGINAL PAYMENT FOUND", "मूल भुगतान मिला")}</small><b>{tr("Cash at PRS counter", "PRS काउंटर पर नकद")}</b></span></div>
+              <div className="original-payment"><Icon name="wallet" size={19} /><span><small>{tr("ORIGINAL PAYMENT FOUND", "मूल भुगतान मिला")}</small><b>{ticketData.ticketType === "uts" ? tr("Cash at UTS counter", "UTS काउंटर पर नकद") : tr("Cash at PRS counter", "PRS काउंटर पर नकद")}</b></span></div>
               <div className="method-tabs" role="tablist" aria-label={tr("Refund destination", "रिफंड का स्थान")}><button role="tab" aria-selected={payout === "upi"} className={payout === "upi" ? "active" : ""} onClick={() => setPayout("upi")}><Icon name="phone" />UPI</button><button role="tab" aria-selected={payout === "bank"} className={payout === "bank" ? "active" : ""} onClick={() => setPayout("bank")}><Icon name="wallet" />{tr("Bank account", "बैंक खाता")}</button></div>
               {payout === "upi" ? (
                 <div className="payout-card selected"><span className="radio-dot" /><div><small>UPI ID</small><b>asha.rail@okaxis</b><p>{tr("Bank-returned name: Asha P.", "बैंक से मिला नाम: आशा P.")}</p></div><span className="verified-badge"><Icon name="check" size={13} /> {tr("NAME FOUND", "नाम मिला")}</span></div>
               ) : (
                 <div className="payout-card selected"><span className="radio-dot" /><div><small>{tr("BANK ACCOUNT", "बैंक खाता")}</small><b>{tr("State Bank", "स्टेट बैंक")} · •••• 1842</b><p>{tr("Bank-returned name: Asha P.", "बैंक से मिला नाम: आशा P.")}</p></div><span className="verified-badge"><Icon name="check" size={13} /> {tr("NAME FOUND", "नाम मिला")}</span></div>
               )}
-              <div className="recipient-check"><Icon name="shield" /><div><b>{tr("Destination and claimant checked separately", "खाता और दावेदार अलग-अलग जाँचे गए")}</b><p>{tr("The mock bank confirmed the destination name. The booking code and one-time ticket photo confirmed the claimant.", "नकली बैंक ने खाते का नाम बताया। बुकिंग कोड और टिकट की नई तस्वीर से दावेदार की पुष्टि हुई।")}</p></div></div>
+              <div className="recipient-check"><Icon name="shield" /><div><b>{tr("Destination and claimant checked separately", "खाता और दावेदार अलग-अलग जाँचे गए")}</b><p>{ticketData.ticketType === "uts" ? tr("The mock bank confirmed the destination name. The UTS number and one-time ticket photo confirmed current possession—no booking mobile was used.", "नकली बैंक ने खाते का नाम बताया। UTS नंबर और टिकट की नई तस्वीर से मौजूदा कब्ज़े की पुष्टि हुई—बुकिंग मोबाइल इस्तेमाल नहीं हुआ।") : tr("The mock bank confirmed the destination name. The booking code and one-time ticket photo confirmed the claimant.", "नकली बैंक ने खाते का नाम बताया। बुकिंग कोड और टिकट की नई तस्वीर से दावेदार की पुष्टि हुई।")}</p></div></div>
               <div className="privacy-note"><Icon name="lock" size={18} /><span>{tr("Only masked, synthetic payment details are used in this prototype.", "इस प्रोटोटाइप में केवल छिपी हुई, नकली भुगतान जानकारी इस्तेमाल होती है।")}</span></div>
               <BottomActions><button className="primary-button" onClick={() => go("review")}>{tr("Review refund", "रिफंड की जाँच करें")}<Icon name="arrow" /></button></BottomActions>
             </div>
@@ -646,8 +729,8 @@ export default function TicketWapas() {
           {screen === "review" && (
             <div className="screen">
               <div className="screen-heading"><p className="eyebrow">{tr("FINAL REVIEW", "अंतिम जाँच")}</p><h1>{tr("Ready to start the refund.", "रिफंड शुरू करने के लिए तैयार।")}</h1><p>{tr("Nothing is paid until this final confirmation. Review the facts and consent below.", "अंतिम पुष्टि से पहले कोई भुगतान नहीं होगा। नीचे जानकारी और सहमति जाँचें।")}</p></div>
-              <div className="refund-total"><span><small>{tr("FULL REFUND", "पूरा रिफंड")}</small><b>₹{ticketData.fare.toLocaleString("en-IN")}</b></span><span className="no-fee">₹0 {tr("fee", "शुल्क")}</span></div>
-              <div className="review-list"><div><span>{tr("Ticket", "टिकट")}</span><b>PNR {ticketData.pnr}</b></div><div><span>{tr("Journey", "यात्रा")}</span><b>{ticketData.origin} → {ticketData.destination}</b></div><div><span>{tr("Journey date", "यात्रा की तारीख")}</span><b>{formatJourneyDate(ticketData.date, lang)}</b></div><div><span>{tr("Cancellation", "रद्दीकरण")}</span><b className="green-text"><Icon name="check" size={14} /> {tr("Cancellation found", "रद्दीकरण मिला")}</b></div><div><span>{tr("Ownership", "मालिकाना")}</span><b className="green-text"><Icon name="check" size={14} /> {tr("Booking mobile confirmed", "बुकिंग मोबाइल की पुष्टि हुई")}</b></div><div><span>{tr("Paper ticket", "कागज़ी टिकट")}</span><b className="green-text"><Icon name="check" size={14} /> {tr("Digitally surrendered", "डिजिटल रूप से समर्पित")}</b></div><div><span>{tr("Refund account", "रिफंड खाता")}</span><b>{payout === "upi" ? "asha.rail@okaxis" : "SBI · •••• 1842"}</b></div></div>
+              <div className="refund-total"><span><small>{ticketData.ticketType === "uts" ? tr("REFUND AMOUNT", "रिफंड राशि") : tr("FULL REFUND", "पूरा रिफंड")}</small><b>₹{ticketData.fare.toLocaleString("en-IN")}</b></span><span className="no-fee">₹0 {tr("fee", "शुल्क")}</span></div>
+              <div className="review-list"><div><span>{ticketData.ticketType === "uts" ? tr("UTS number", "UTS नंबर") : tr("Ticket", "टिकट")}</span><b>{ticketData.ticketType === "uts" ? ticketData.identifier : `PNR ${ticketData.identifier}`}</b></div><div><span>{tr("Journey", "यात्रा")}</span><b>{ticketData.origin} → {ticketData.destination}</b></div><div><span>{tr("Journey date", "यात्रा की तारीख")}</span><b>{formatJourneyDate(ticketData.date, lang)}</b></div><div><span>{tr("Cancellation", "रद्दीकरण")}</span><b className="green-text"><Icon name="check" size={14} /> {ticketData.ticketType === "uts" ? tr("Special cancellation found", "विशेष रद्दीकरण मिला") : tr("Cancellation found", "रद्दीकरण मिला")}</b></div><div><span>{tr("Ownership", "मालिकाना")}</span><b className="green-text"><Icon name="check" size={14} /> {ticketData.ticketType === "uts" ? tr("Original ticket possession confirmed", "मूल टिकट का कब्ज़ा पुष्ट") : tr("Booking mobile confirmed", "बुकिंग मोबाइल की पुष्टि हुई")}</b></div><div><span>{tr("Paper ticket", "कागज़ी टिकट")}</span><b className="green-text"><Icon name="check" size={14} /> {tr("Digitally surrendered", "डिजिटल रूप से समर्पित")}</b></div><div><span>{tr("Refund account", "रिफंड खाता")}</span><b>{payout === "upi" ? "asha.rail@okaxis" : "SBI · •••• 1842"}</b></div></div>
               <button className="edit-link" onClick={() => go("details")}><Icon name="back" size={16} /> {tr("Edit ticket details", "टिकट की जानकारी बदलें")}</button>
               <label className="consent-row"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span><b>{tr("I confirm these details are correct.", "मैं पुष्टि करता/करती हूँ कि यह जानकारी सही है।")}</b><small>{tr("I agree to use these details to create one refund request for this journey.", "मैं इस यात्रा के लिए एक रिफंड अनुरोध बनाने में इस जानकारी के उपयोग से सहमत हूँ।")}</small></span></label>
               <div className="lock-preview"><Icon name="lock" /><div><b>{tr("We check for an existing refund first", "हम पहले पुराने रिफंड की जाँच करते हैं")}</b><p>{tr("This prevents the same ticket from being refunded twice, even if the button is tapped again.", "बटन दोबारा दबने पर भी इससे एक ही टिकट का दो बार रिफंड नहीं होता।")}</p></div></div>
@@ -658,14 +741,14 @@ export default function TicketWapas() {
           {screen === "tracking" && (
             <div className="screen tracking-screen">
               <div className={`success-orbit ${paid ? "paid" : ""}`}><span><Icon name="check" size={34} /></span></div>
-              <p className="eyebrow">{tr("CLAIM TW-824-613", "दावा TW-824-613")}</p>
+              <p className="eyebrow">{ticketData.ticketType === "uts" ? tr("CLAIM TW-UTS-613", "दावा TW-UTS-613") : tr("CLAIM TW-824-613", "दावा TW-824-613")}</p>
               <h1>{paid ? tr(`₹${ticketData.fare.toLocaleString("en-IN")} has been paid.`, `₹${ticketData.fare.toLocaleString("en-IN")} का भुगतान हो गया।`) : tr("Your refund request is ready.", "आपका रिफंड अनुरोध तैयार है।")}</h1>
               <p className="hero-sub">{paid ? tr("Sent to your selected refund account. Keep this reference for your records.", "चुने हुए रिफंड खाते में भेज दिया गया है। यह संदर्भ सुरक्षित रखें।") : tr("We found no earlier refund for this ticket. You can now complete the mocked payment.", "इस टिकट का कोई पुराना रिफंड नहीं मिला। अब नकली भुगतान पूरा करें।")}</p>
               <div className="tracking-amount"><small>{tr("REFUND AMOUNT", "रिफंड राशि")}</small><b>₹{ticketData.fare.toLocaleString("en-IN")}</b><span className={paid ? "paid-state" : "pending-state"}>{paid ? tr("PAID", "भुगतान हुआ") : tr("REFUND PENDING", "रिफंड बाकी")}</span></div>
               <div className="timeline">
                 <div className="complete"><i><Icon name="check" size={13} /></i><span><b>{tr("Refund request created", "रिफंड अनुरोध बना")}</b><small>{tr("24 Aug · 10:41:08", "24 अगस्त · 10:41:08")}</small></span></div>
-                <div className="complete"><i><Icon name="check" size={13} /></i><span><b>{tr("Mock cancellation confirmed", "नकली रद्दीकरण की पुष्टि हुई")}</b><small>{tr("24 Aug · 10:41:09", "24 अगस्त · 10:41:09")}</small></span></div>
-                <div className="complete"><i><Icon name="check" size={13} /></i><span><b>{tr("Paper ticket cancelled digitally", "कागज़ी टिकट ऑनलाइन रद्द हुआ")}</b><small>{tr("Simulated receipt TW-DS-824", "नकली रसीद TW-DS-824")}</small></span></div>
+                <div className="complete"><i><Icon name="check" size={13} /></i><span><b>{ticketData.ticketType === "uts" ? tr("UTS special cancellation confirmed", "UTS विशेष रद्दीकरण पुष्ट") : tr("Mock cancellation confirmed", "नकली रद्दीकरण की पुष्टि हुई")}</b><small>{tr("24 Aug · 10:41:09", "24 अगस्त · 10:41:09")}</small></span></div>
+                <div className="complete"><i><Icon name="check" size={13} /></i><span><b>{tr("Paper ticket cancelled digitally", "कागज़ी टिकट ऑनलाइन रद्द हुआ")}</b><small>{ticketData.ticketType === "uts" ? tr("Simulated receipt TW-UTS-824", "नकली रसीद TW-UTS-824") : tr("Simulated receipt TW-DS-824", "नकली रसीद TW-DS-824")}</small></span></div>
                 <div className={paid ? "complete" : "current"}><i>{paid ? <Icon name="check" size={13} /> : <span />}</i><span><b>{paid ? tr("Paid to selected account", "चुने खाते में भुगतान हुआ") : tr("Refund ready to send", "रिफंड भेजने के लिए तैयार")}</b><small>{paid ? tr("Payment reference 4268•••914", "भुगतान संदर्भ 4268•••914") : tr("Complete the mock payment below", "नीचे नकली भुगतान पूरा करें")}</small></span></div>
               </div>
               <BottomActions>

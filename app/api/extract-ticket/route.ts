@@ -13,6 +13,7 @@ const ticketSchema = {
     "documentConfidence",
     "documentNotes",
     "pnr",
+    "utsNumber",
     "trainNumber",
     "trainName",
     "date",
@@ -26,12 +27,13 @@ const ticketSchema = {
   properties: {
     documentType: {
       type: "string",
-      enum: ["prs_counter_ticket", "not_ticket", "unclear"],
-      description: "Classify only a physical Indian Railways PRS counter ticket as prs_counter_ticket. E-tickets, screenshots, IDs, receipts and unrelated images are not_ticket.",
+      enum: ["prs_counter_ticket", "uts_counter_ticket", "not_ticket", "unclear"],
+      description: "Classify a physical reserved PRS ticket as prs_counter_ticket and a physical unreserved/general UTS ticket as uts_counter_ticket. E-tickets, screenshots, IDs, receipts and unrelated images are not_ticket.",
     },
     documentConfidence: { type: "string", enum: ["high", "medium", "low"] },
     documentNotes: { type: "string", description: "One short reason for the classification, without personal data." },
     pnr: { type: ["string", "null"] },
+    utsNumber: { type: ["string", "null"], description: "The 10-character alphanumeric UTS number only when visibly printed." },
     trainNumber: { type: ["string", "null"] },
     trainName: { type: ["string", "null"] },
     date: { type: ["string", "null"], description: "Journey date in YYYY-MM-DD format. Return null if the complete date is not visible." },
@@ -43,9 +45,10 @@ const ticketSchema = {
     confidence: {
       type: "object",
       additionalProperties: false,
-      required: ["pnr", "trainNumber", "date", "origin", "destination", "fare"],
+      required: ["pnr", "utsNumber", "trainNumber", "date", "origin", "destination", "fare"],
       properties: {
         pnr: { type: "string", enum: ["extracted", "unclear", "missing"] },
+        utsNumber: { type: "string", enum: ["extracted", "unclear", "missing"] },
         trainNumber: { type: "string", enum: ["extracted", "unclear", "missing"] },
         date: { type: "string", enum: ["extracted", "unclear", "missing"] },
         origin: { type: "string", enum: ["extracted", "unclear", "missing"] },
@@ -97,9 +100,10 @@ function readOutputText(payload: Record<string, unknown>) {
 }
 
 type ParsedTicket = {
-  documentType?: "prs_counter_ticket" | "not_ticket" | "unclear";
+  documentType?: "prs_counter_ticket" | "uts_counter_ticket" | "not_ticket" | "unclear";
   documentConfidence?: "high" | "medium" | "low";
   pnr?: string | null;
+  utsNumber?: string | null;
   trainNumber?: string | null;
   date?: string | null;
   origin?: string | null;
@@ -108,9 +112,12 @@ type ParsedTicket = {
 };
 
 function hasReadableTicketEvidence(ticket: ParsedTicket) {
-  if (ticket.documentType !== "prs_counter_ticket" || ticket.documentConfidence === "low") return false;
+  if (!new Set(["prs_counter_ticket", "uts_counter_ticket"]).has(ticket.documentType ?? "") || ticket.documentConfidence === "low") return false;
+  const identifierIsReadable = ticket.documentType === "prs_counter_ticket"
+    ? typeof ticket.pnr === "string" && /^\d{10}$/.test(ticket.pnr.replace(/\D/g, ""))
+    : typeof ticket.utsNumber === "string" && /^[A-Z0-9]{10}$/i.test(ticket.utsNumber.replace(/[^A-Z0-9]/gi, ""));
   const anchors = [
-    typeof ticket.pnr === "string" && /^\d{10}$/.test(ticket.pnr.replace(/\D/g, "")),
+    identifierIsReadable,
     typeof ticket.trainNumber === "string" && /^\d{5}$/.test(ticket.trainNumber.replace(/\D/g, "")),
     typeof ticket.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(ticket.date),
   ].filter(Boolean).length;
@@ -169,7 +176,7 @@ export async function POST(request: Request) {
           content: [
             {
               type: "input_text",
-              text: "First decide whether this image clearly shows a physical Indian Railways PRS counter ticket. E-tickets, phone screenshots, IDs, receipts, forms, scenery, people and unrelated images are not tickets. If it is not a PRS counter ticket, set documentType to not_ticket and leave every ticket field null. If the document type cannot be confirmed, set documentType to unclear and abstain. Only for a visible PRS counter ticket, extract facts visibly printed on it. Never infer a missing value. Return the journey date only as YYYY-MM-DD; otherwise return null. Mark every key field as extracted, unclear, or missing. Do not determine cancellation status, refund eligibility, identity or refund amount.",
+              text: "First classify the image. A physical reserved Indian Railways counter ticket with a 10-digit PNR is prs_counter_ticket. A physical unreserved/general counter ticket with an alphanumeric UTS number and no PNR is uts_counter_ticket. E-tickets, phone screenshots, IDs, receipts, forms, scenery, people and unrelated images are not_ticket. If the ticket type cannot be confirmed, set documentType to unclear and abstain. For a visible physical counter ticket, extract only facts visibly printed on it. Put the reserved identifier in pnr or the unreserved identifier in utsNumber and leave the other null. An ordinary UTS ticket may have no train number; never invent one. Never infer a missing value. Return the journey date only as YYYY-MM-DD; otherwise return null. Mark every key field as extracted, unclear, or missing. Do not determine cancellation status, refund eligibility, identity or refund amount.",
             },
             { type: "input_image", image_url: dataUrl, detail: "high" },
           ],

@@ -1,8 +1,8 @@
 # Ticket Wapas
 
-A competition prototype for remote refunds when an Indian railway PRS counter-ticket journey is cancelled by Railways.
+A competition prototype for remote refunds when an Indian railway paper counter-ticket journey is cancelled by Railways. It distinguishes reserved PRS tickets from unreserved/general UTS tickets instead of forcing every citizen to enter a PNR.
 
-The product demonstrates the full citizen journey: ticket capture, field confirmation, deterministic eligibility, ownership verification, payout selection, duplicate-safe claim creation, and refund tracking. Six judge-ready scenarios cover the happy path and the failure states that make the concept credible.
+The product demonstrates ticket capture, automatic PRS/UTS classification, field confirmation, rules-based eligibility, ticket-possession verification, payout selection and refund tracking. The synthetic train-specific UTS sample completes the special-cancellation journey without inventing a booking-mobile OTP; an ordinary route-based UTS ticket is safely sent for an alternate-service check.
 
 ## Run locally
 
@@ -25,6 +25,7 @@ The extraction route uses the OpenAI Responses API with image input, a strict JS
 - Duplicate claim: second payout blocked by idempotency key
 - Train operating: ineligible without creating a claim
 - No booking mobile: assisted-verification path
+- General/UTS ticket: uses its alphanumeric UTS number and original-ticket possession, never a PNR or booking mobile
 - Unreadable ticket: manual correction before lookup
 - Payment retry: locked claim survives gateway timeout
 

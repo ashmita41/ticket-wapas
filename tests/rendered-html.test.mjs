@@ -21,6 +21,7 @@ function extractedTicket(overrides = {}) {
     documentConfidence: "high",
     documentNotes: "Visible synthetic PRS counter ticket layout and fields.",
     pnr: "2468135790",
+    utsNumber: null,
     trainNumber: "12424",
     trainName: "Rajdhani Express",
     date: "2026-08-24",
@@ -31,6 +32,35 @@ function extractedTicket(overrides = {}) {
     mobile: null,
     confidence: {
       pnr: "extracted",
+      utsNumber: "missing",
+      trainNumber: "extracted",
+      date: "extracted",
+      origin: "extracted",
+      destination: "extracted",
+      fare: "extracted",
+    },
+    ...overrides,
+  };
+}
+
+function extractedUtsTicket(overrides = {}) {
+  return {
+    documentType: "uts_counter_ticket",
+    documentConfidence: "high",
+    documentNotes: "Visible synthetic unreserved UTS counter ticket and fields.",
+    pnr: null,
+    utsNumber: "UTS7A4K219",
+    trainNumber: "12056",
+    trainName: "Jan Shatabdi",
+    date: "2026-08-24",
+    origin: "New Delhi",
+    destination: "Dehradun",
+    passengers: 1,
+    fare: 165,
+    mobile: null,
+    confidence: {
+      pnr: "missing",
+      utsNumber: "extracted",
       trainNumber: "extracted",
       date: "extracted",
       origin: "extracted",
@@ -114,6 +144,15 @@ test("keeps secrets server-side and ships the social preview", async () => {
   assert.match(client, /ASSISTED VERIFICATION · SIMULATED/i);
   assert.match(client, /HELP REFERENCE TW-HELP-2714/i);
   assert.match(client, /Take or upload ticket photo/i);
+  assert.match(client, /UNRESERVED UTS · SYNTHETIC/i);
+  assert.match(client, /Unreserved UTS ticket found/i);
+  assert.match(client, /This ticket has a UTS number instead of a PNR/i);
+  assert.match(client, /UTS SPECIAL CANCELLATION/i);
+  assert.match(client, /No booking-mobile OTP used/i);
+  assert.match(client, /UTS CANCELLATION RECEIPT TW-UTS-824/i);
+  assert.match(client, /One more check is needed/i);
+  assert.match(client, /UTS REFERENCE TW-UTS-HELP-219/i);
+  assert.match(client, /No refund was started/i);
   assert.match(client, /How we check a refund/i);
   assert.match(client, /DIGITAL TICKET SURRENDER · SIMULATED/i);
   assert.match(client, /Take a one-time surrender photo/i);
@@ -122,7 +161,7 @@ test("keeps secrets server-side and ships the social preview", async () => {
   assert.match(client, /no live Railway record was changed/i);
   assert.doesNotMatch(client, /Authorised pickup|PRS counter handover|TW-HO-824/i);
   assert.match(client, /Cash at PRS counter/i);
-  assert.match(client, /Prototype demonstration: Railway, OTP and payment responses are simulated/i);
+  assert.match(client, /Railway, ticket-record, OTP where applicable and payment responses are simulated/i);
   assert.doesNotMatch(client, /home-visual|ticket-stub|CLEAR NEXT STEP|SERVICE OVERVIEW/i);
   assert.match(client, /अब यह नंबर मेरे पास नहीं है/);
   assert.match(client, /रिफंड शुरू करने के लिए तैयार/);
@@ -150,6 +189,7 @@ test("rejects an unrelated image instead of advancing the citizen journey", asyn
     documentType: "not_ticket",
     documentNotes: "A landscape image with no ticket.",
     pnr: null,
+    utsNumber: null,
     trainNumber: null,
     trainName: null,
     date: null,
@@ -159,6 +199,7 @@ test("rejects an unrelated image instead of advancing the citizen journey", asyn
     fare: null,
     confidence: {
       pnr: "missing",
+      utsNumber: "missing",
       trainNumber: "missing",
       date: "missing",
       origin: "missing",
@@ -185,16 +226,30 @@ test("accepts a classified ticket only when enough visible ticket evidence is pr
   assert.equal(body.stored, false);
 });
 
+test("accepts a classified unreserved UTS counter ticket without a PNR", async () => {
+  const app = await worker();
+  const result = await withMockOpenAI(extractedUtsTicket(), () => app.fetch(syntheticUpload("test-valid-uts-ticket"), env, context));
+
+  assert.equal(result.status, 200);
+  const body = await result.json();
+  assert.equal(body.ticket.documentType, "uts_counter_ticket");
+  assert.equal(body.ticket.utsNumber, "UTS7A4K219");
+  assert.equal(body.ticket.pnr, null);
+  assert.equal(body.stored, false);
+});
+
 test("abstains when a ticket classification has too little readable evidence", async () => {
   const app = await worker();
   const result = await withMockOpenAI(extractedTicket({
     pnr: null,
+    utsNumber: null,
     trainNumber: null,
     origin: null,
     destination: null,
     fare: null,
     confidence: {
       pnr: "missing",
+      utsNumber: "missing",
       trainNumber: "missing",
       date: "extracted",
       origin: "missing",

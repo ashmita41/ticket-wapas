@@ -2,26 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { fallbackSampleClaims, readSampleClaims } from "../sample-claims";
 
 type Lang = "en" | "hi";
 type Stage = "signin" | "otp" | "account" | "detail";
-type ClaimStatus = "paid" | "processing";
-
-type Claim = {
-  id: string;
-  ticket: string;
-  route: string;
-  amount: number;
-  status: ClaimStatus;
-  updated: string;
-  destination: string;
-};
-
-const claims: Claim[] = [
-  { id: "TW-UTS-613", ticket: "UTS7A4K219", route: "New Delhi → Dehradun", amount: 165, status: "paid", updated: "27 Aug 2026 · 12:18 PM", destination: "UPI · asha.rail@okaxis" },
-  { id: "TW-824-613", ticket: "PNR 2468135790", route: "New Delhi → Dibrugarh", amount: 4860, status: "processing", updated: "27 Aug 2026 · 11:04 AM", destination: "Bank account · •••• 1842" },
-];
-
 function Mark() {
   return <span className="portal-mark" aria-hidden="true"><i /><i /><b /></span>;
 }
@@ -35,13 +19,25 @@ export default function RefundStatusClient() {
   const [stage, setStage] = useState<Stage>("signin");
   const [mobile, setMobile] = useState("");
   const [otp, setOtp] = useState("");
-  const [selectedId, setSelectedId] = useState(claims[0].id);
-  const selectedClaim = claims.find((claim) => claim.id === selectedId) ?? claims[0];
+  const [claimRecords, setClaimRecords] = useState(fallbackSampleClaims);
+  const [selectedId, setSelectedId] = useState(fallbackSampleClaims[0].id);
+  const selectedClaim = claimRecords.find((claim) => claim.id === selectedId) ?? claimRecords[0];
+  const totalRefundValue = claimRecords.reduce((total, claim) => total + claim.amount, 0);
   const tr = (english: string, hindi: string) => lang === "hi" ? hindi : english;
 
   useEffect(() => {
     document.documentElement.lang = lang === "hi" ? "hi" : "en";
   }, [lang]);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      const recent = readSampleClaims();
+      if (recent.length === 0) return;
+      const recentIds = new Set(recent.map((claim) => claim.id));
+      setClaimRecords([...recent, ...fallbackSampleClaims.filter((claim) => !recentIds.has(claim.id))]);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
   function signOut() {
     setStage("signin");
@@ -90,9 +86,9 @@ export default function RefundStatusClient() {
 
           {stage === "account" && <div className="screen portal-screen account-screen">
             <div className="account-welcome"><div><p className="eyebrow">{tr("SIGNED IN", "साइन इन")}</p><h1>{tr("Your refunds", "आपके रिफंड")}</h1><p>{tr("Signed in as Asha P. · +91 •••••• 2714", "आशा P. के रूप में साइन इन · +91 •••••• 2714")}</p></div><span className="account-avatar">AP</span></div>
-            <div className="account-summary"><span><b>2</b><small>{tr("REFUND REQUESTS", "रिफंड अनुरोध")}</small></span><span><b>₹5,025</b><small>{tr("TOTAL REFUND VALUE", "कुल रिफंड राशि")}</small></span></div>
+            <div className="account-summary"><span><b>{claimRecords.length}</b><small>{tr("REFUND REQUESTS", "रिफंड अनुरोध")}</small></span><span><b>₹{totalRefundValue.toLocaleString("en-IN")}</b><small>{tr("TOTAL REFUND VALUE", "कुल रिफंड राशि")}</small></span></div>
             <div className="claim-list">
-              {claims.map((claim) => <article className="claim-card" key={claim.id}><div className="claim-card-top"><span><small>{tr("CLAIM", "दावा")}</small><b>{claim.id}</b></span><em className={`claim-status ${claim.status}`}>{claim.status === "paid" ? tr("PAID", "भुगतान हुआ") : tr("PROCESSING", "प्रक्रिया में")}</em></div><p>{claim.ticket} · {claim.route}</p><div className="claim-amount"><strong>₹{claim.amount.toLocaleString("en-IN")}</strong><small>{claim.status === "paid" ? tr("Paid to selected account", "चुने खाते में भुगतान हुआ") : tr("Refund is being sent", "रिफंड भेजा जा रहा है")}</small></div><button className="claim-open" onClick={() => { setSelectedId(claim.id); go("detail"); }}>{tr("View status", "स्थिति देखें")} →</button></article>)}
+              {claimRecords.map((claim) => <article className="claim-card" key={claim.id}><div className="claim-card-top"><span><small>{tr("CLAIM", "दावा")}</small><b>{claim.id}</b></span><em className={`claim-status ${claim.status}`}>{claim.status === "paid" ? tr("PAID", "भुगतान हुआ") : tr("PROCESSING", "प्रक्रिया में")}</em></div><p>{claim.ticket} · {claim.route}</p><div className="claim-amount"><strong>₹{claim.amount.toLocaleString("en-IN")}</strong><small>{claim.status === "paid" ? tr("Paid to selected account", "चुने खाते में भुगतान हुआ") : tr("Refund is being sent", "रिफंड भेजा जा रहा है")}</small></div><button className="claim-open" onClick={() => { setSelectedId(claim.id); go("detail"); }}>{tr("View status", "स्थिति देखें")} →</button></article>)}
             </div>
             <Link className="start-new-link" href="/">+ {tr("Start another refund request", "दूसरा रिफंड अनुरोध शुरू करें")}</Link>
             <button className="portal-text-signout" onClick={signOut}>{tr("Sign out of this account", "इस खाते से साइन आउट करें")}</button>

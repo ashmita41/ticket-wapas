@@ -23,16 +23,16 @@ The extraction route uses the OpenAI Responses API with image input, a strict JS
 
 ## Demo scenarios
 
-- Happy path: eligible ticket through simulated payment confirmation
-- Duplicate claim: second payout blocked by idempotency key
+- Happy path: eligible ticket through active citizen consent and simulated refund transfer
+- Duplicate claim: a repeated request reopens the same claim instead of creating a second payout
 - Train operating: ineligible without creating a claim
 - No booking mobile: assisted-verification path
 - General/UTS ticket: uses its alphanumeric UTS number and original-ticket possession, never a PNR or booking mobile
 - Unreadable ticket: manual correction before lookup
-- Payment retry: locked claim survives gateway timeout
+- Payment retry: an approved claim remains processing while the same transfer reference is reconciled
 - Returning citizen: sample mobile + demo OTP opens refund history and detailed status
 - Authority operations: use the prefilled sample officer login, filter the application queue, inspect masked details and sign out
 
 All ticket, OTP, identity, Railway and payment data is synthetic. A concise disclosure appears in the footer, while the service-information page documents the process and production integrations without interrupting the citizen journey with repeated technical notices.
 
-The research and competition plan is in `docs/ticket-wapas-winning-plan.md`.
+The research and competition plan is in `docs/ticket-wapas-winning-plan.md`. The full exception/Q&A defence is in `docs/judge-edge-case-matrix.md`, and the exact two-minute recording sequence is in `docs/video-recording-runbook.md`.

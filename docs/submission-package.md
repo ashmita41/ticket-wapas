@@ -19,14 +19,14 @@ Ticket Wapas is simpler because it keeps the citizen in one bilingual, mobile-fi
 - **0:19–0:31:** Check and correct the PNR, train, date, route and fare. Say: “The ticket reader fills the form, but the citizen confirms every important detail.”
 - **0:31–0:42:** Show the three plain-language eligibility checks and the clear refund result.
 - **0:42–0:51:** Fill the visible demo OTP and select the synthetic UPI destination.
-- **0:51–1:00:** Start the refund and complete the mock payment. End on the paid state and citizen-friendly payment reference.
+- **0:51–1:00:** Actively confirm once and send the refund. End on the paid state and citizen-friendly payment reference; the citizen is never asked to “complete payment.”
 
 ### 1:00–2:00 — how and why
 
 - **1:00–1:14:** Explain the real gap: automatic e-ticket refunds versus a physical return journey for some counter-ticket cases.
 - **1:14–1:29:** Show the architecture: OpenAI structured ticket extraction, deterministic eligibility, ownership verification, claim lock, payment adapter and audit trail.
 - **1:29–1:42:** Return to ticket capture and briefly show the General/UTS sample: no PNR, no booking-mobile OTP and a separate special-cancellation rule.
-- **1:42–1:52:** Show that citizens can later sign in to reopen status, then use the prefilled officer login to open the separate authority queue.
+- **1:42–1:52:** Show that citizens can later sign in and reopen the exact same amount, destination and paid status. Keep the authority queue out of the main video unless specifically requested.
 - **1:52–2:00:** Explain the synthetic-data boundary, then close: “The refund moves to the passenger instead of making the passenger travel for it.”
 
 ## Final submission checklist

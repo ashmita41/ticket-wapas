@@ -109,7 +109,7 @@ test("server-renders the Ticket Wapas prototype", async () => {
 
   const html = await response.text();
   assert.match(html, /<title>Ticket Wapas/);
-  assert.match(html, /Refund for a paper railway ticket/);
+  assert.match(html, /Train cancelled\? Refund your paper ticket/);
   assert.match(html, /Start refund journey/);
   assert.match(html, /Original paper ticket/);
   assert.match(html, /CITIZEN REFUND SERVICE/);
@@ -195,6 +195,10 @@ test("keeps secrets server-side and ships the social preview", async () => {
   assert.match(route, /documentType/);
   assert.doesNotMatch(client, /OPENAI_API_KEY|Bearer sk-/);
   assert.match(client, /We check for an existing refund first/i);
+  assert.match(client, /useState\(false\)/);
+  assert.match(client, /Confirm and send ₹/i);
+  assert.match(client, /Your refund is being sent/i);
+  assert.doesNotMatch(client, /Complete payment/i);
   assert.match(client, /Every field is editable, and you stay in control/i);
   assert.match(client, /type="date"/i);
   assert.match(client, /I checked the PNR, train number and journey date/i);
@@ -229,6 +233,21 @@ test("keeps secrets server-side and ships the social preview", async () => {
   assert.match(client, /रिफंड शुरू करने के लिए तैयार/);
   assert.doesNotMatch(client, /JUDGE CONTROLS|Test the real edge cases|Demo: Happy path|judge-ready/i);
   assert.doesNotMatch(client, /Idempotency key|tokenised|claim key|payment rail|Deterministic eligibility|fixed product rules|PNR \+ journey \+ claim type/i);
+});
+
+test("keeps the completed citizen journey consistent with refund status", async () => {
+  const [journey, status, claims] = await Promise.all([
+    readFile(new URL("../app/ticket-wapas.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/status/status-client.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/sample-claims.ts", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(journey, /writeSampleClaim\(processingClaim\)/);
+  assert.match(journey, /status: "paid"/);
+  assert.match(status, /readSampleClaims\(\)/);
+  assert.match(status, /claimRecords\.map/);
+  assert.match(claims, /ticket-wapas\.sample-claims\.v1/);
+  assert.match(claims, /filter\(isSampleClaim\)/);
 });
 
 test("returns a safe manual fallback when AI extraction is not configured", async () => {

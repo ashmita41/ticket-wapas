@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangeEvent, ReactNode, useEffect, useRef, useState } from "react";
+import { SampleClaim, writeSampleClaim } from "./sample-claims";
 
 type Screen =
   | "home"
@@ -297,7 +298,7 @@ export default function TicketWapas() {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [surrenderStage, setSurrenderStage] = useState<SurrenderStage>("ready");
   const [payout, setPayout] = useState<Payout>("upi");
-  const [consent, setConsent] = useState(true);
+  const [consent, setConsent] = useState(false);
   const [paid, setPaid] = useState(false);
   const [retrying, setRetrying] = useState(false);
   const [assistanceMobile, setAssistanceMobile] = useState("");
@@ -348,7 +349,7 @@ export default function TicketWapas() {
     setOtp(["", "", "", "", "", ""]);
     setSurrenderStage("ready");
     setPayout("upi");
-    setConsent(true);
+    setConsent(false);
     setPaid(false);
     setRetrying(false);
     setAssistanceMobile("");
@@ -357,8 +358,34 @@ export default function TicketWapas() {
   }
 
   function go(next: Screen) {
+    if (next === "review") setConsent(false);
     setScreen(next);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function currentClaim(status: SampleClaim["status"]): SampleClaim {
+    return {
+      id: ticketData.ticketType === "uts" ? "TW-UTS-613" : "TW-824-613",
+      ticket: ticketData.ticketType === "uts" ? ticketData.identifier : `PNR ${ticketData.identifier}`,
+      route: `${ticketData.origin} → ${ticketData.destination}`,
+      amount: ticketData.fare,
+      status,
+      updated: "Just now",
+      destination: payout === "upi" ? "UPI · asha.rail@okaxis" : "Bank account · •••• 1842",
+    };
+  }
+
+  function startRefund() {
+    const processingClaim = currentClaim("processing");
+    setPaid(false);
+    setRetrying(true);
+    writeSampleClaim(processingClaim);
+    go("tracking");
+    window.setTimeout(() => {
+      setPaid(true);
+      setRetrying(false);
+      writeSampleClaim({ ...processingClaim, status: "paid", updated: "Just now" });
+    }, 900);
   }
 
   function back() {
@@ -509,8 +536,8 @@ export default function TicketWapas() {
                 <span><Icon name="shield" size={22} /></span>
                 <p><b>{tr("Paper railway ticket refund", "कागज़ी रेलवे टिकट रिफंड")}</b><small>{tr("Guided citizen service", "निर्देशित नागरिक सेवा")}</small></p>
               </div>
-              <h1>{tr("Refund for a paper railway ticket", "कागज़ी रेलवे टिकट का रिफंड")}</h1>
-              <p className="hero-sub">{tr("Check a cancelled counter ticket and complete the right refund steps.", "रद्द हुई काउंटर टिकट जाँचें और रिफंड के सही कदम पूरे करें।")}</p>
+              <h1>{tr("Train cancelled? Refund your paper ticket.", "ट्रेन रद्द हुई? कागज़ी टिकट का रिफंड पाएँ।")}</h1>
+              <p className="hero-sub">{tr("Check your counter ticket and complete the refund without another station visit.", "काउंटर टिकट जाँचें और स्टेशन दोबारा जाए बिना रिफंड पूरा करें।")}</p>
               <div className="home-actions">
                 <button className="primary-button" onClick={() => go("capture")}>{c.start}<Icon name="arrow" /></button>
               </div>
@@ -728,7 +755,7 @@ export default function TicketWapas() {
               <button className="edit-link" onClick={() => go("details")}><Icon name="back" size={16} /> {tr("Edit ticket details", "टिकट की जानकारी बदलें")}</button>
               <label className="consent-row"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span><b>{tr("I confirm these details are correct.", "मैं पुष्टि करता/करती हूँ कि यह जानकारी सही है।")}</b><small>{tr("I agree to use these details to create one refund request for this journey.", "मैं इस यात्रा के लिए एक रिफंड अनुरोध बनाने में इस जानकारी के उपयोग से सहमत हूँ।")}</small></span></label>
               <div className="lock-preview"><Icon name="lock" /><div><b>{tr("We check for an existing refund first", "हम पहले पुराने रिफंड की जाँच करते हैं")}</b><p>{tr("This prevents the same ticket from being refunded twice, even if the button is tapped again.", "बटन दोबारा दबने पर भी इससे एक ही टिकट का दो बार रिफंड नहीं होता।")}</p></div></div>
-              <BottomActions><button className="primary-button" disabled={!consent} onClick={() => go("tracking")}>{tr(`Start ₹${ticketData.fare.toLocaleString("en-IN")} refund`, `₹${ticketData.fare.toLocaleString("en-IN")} का रिफंड शुरू करें`)}<Icon name="arrow" /></button></BottomActions>
+              <BottomActions><button className="primary-button" disabled={!consent} onClick={startRefund}>{tr(`Confirm and send ₹${ticketData.fare.toLocaleString("en-IN")} refund`, `पुष्टि करके ₹${ticketData.fare.toLocaleString("en-IN")} रिफंड भेजें`)}<Icon name="arrow" /></button></BottomActions>
             </div>
           )}
 
@@ -736,18 +763,18 @@ export default function TicketWapas() {
             <div className="screen tracking-screen">
               <div className={`success-orbit ${paid ? "paid" : ""}`}><span><Icon name="check" size={34} /></span></div>
               <p className="eyebrow">{ticketData.ticketType === "uts" ? tr("CLAIM TW-UTS-613", "दावा TW-UTS-613") : tr("CLAIM TW-824-613", "दावा TW-824-613")}</p>
-              <h1>{paid ? tr(`₹${ticketData.fare.toLocaleString("en-IN")} has been paid.`, `₹${ticketData.fare.toLocaleString("en-IN")} का भुगतान हो गया।`) : tr("Your refund request is ready.", "आपका रिफंड अनुरोध तैयार है।")}</h1>
-              <p className="hero-sub">{paid ? tr("Sent to your selected refund account. Keep this reference for your records.", "चुने हुए रिफंड खाते में भेज दिया गया है। यह संदर्भ सुरक्षित रखें।") : tr("We found no earlier refund for this ticket. You can now complete the payment.", "इस टिकट का कोई पुराना रिफंड नहीं मिला। अब भुगतान पूरा करें।")}</p>
-              <div className="tracking-amount"><small>{tr("REFUND AMOUNT", "रिफंड राशि")}</small><b>₹{ticketData.fare.toLocaleString("en-IN")}</b><span className={paid ? "paid-state" : "pending-state"}>{paid ? tr("PAID", "भुगतान हुआ") : tr("REFUND PENDING", "रिफंड बाकी")}</span></div>
+              <h1>{paid ? tr(`₹${ticketData.fare.toLocaleString("en-IN")} has been paid.`, `₹${ticketData.fare.toLocaleString("en-IN")} का भुगतान हो गया।`) : tr("Your refund is being sent.", "आपका रिफंड भेजा जा रहा है।")}</h1>
+              <p className="hero-sub">{paid ? tr("Sent to your selected refund account. Keep this reference for your records.", "चुने हुए रिफंड खाते में भेज दिया गया है। यह संदर्भ सुरक्षित रखें।") : tr("Your request is confirmed. This page will update when the transfer is complete.", "आपके अनुरोध की पुष्टि हो गई है। ट्रांसफर पूरा होने पर यह पेज अपडेट होगा।")}</p>
+              <div className="tracking-amount"><small>{tr("REFUND AMOUNT", "रिफंड राशि")}</small><b>₹{ticketData.fare.toLocaleString("en-IN")}</b><span className={paid ? "paid-state" : "pending-state"}>{paid ? tr("PAID", "भुगतान हुआ") : tr("PROCESSING", "प्रक्रिया में")}</span></div>
               <div className="timeline">
                 <div className="complete"><i><Icon name="check" size={13} /></i><span><b>{tr("Refund request created", "रिफंड अनुरोध बना")}</b><small>{tr("24 Aug · 10:41:08", "24 अगस्त · 10:41:08")}</small></span></div>
                 <div className="complete"><i><Icon name="check" size={13} /></i><span><b>{ticketData.ticketType === "uts" ? tr("UTS special cancellation confirmed", "UTS विशेष रद्दीकरण पुष्ट") : tr("Cancellation confirmed", "रद्दीकरण की पुष्टि हुई")}</b><small>{tr("24 Aug · 10:41:09", "24 अगस्त · 10:41:09")}</small></span></div>
                 <div className="complete"><i><Icon name="check" size={13} /></i><span><b>{tr("Paper ticket cancelled digitally", "कागज़ी टिकट ऑनलाइन रद्द हुआ")}</b><small>{ticketData.ticketType === "uts" ? tr("Receipt TW-UTS-824", "रसीद TW-UTS-824") : tr("Receipt TW-DS-824", "रसीद TW-DS-824")}</small></span></div>
-                <div className={paid ? "complete" : "current"}><i>{paid ? <Icon name="check" size={13} /> : <span />}</i><span><b>{paid ? tr("Paid to selected account", "चुने खाते में भुगतान हुआ") : tr("Refund ready to send", "रिफंड भेजने के लिए तैयार")}</b><small>{paid ? tr("Payment reference 4268•••914", "भुगतान संदर्भ 4268•••914") : tr("Complete the payment below", "नीचे भुगतान पूरा करें")}</small></span></div>
+                <div className={paid ? "complete" : "current"}><i>{paid ? <Icon name="check" size={13} /> : <span />}</i><span><b>{paid ? tr("Paid to selected account", "चुने खाते में भुगतान हुआ") : tr("Refund transfer in progress", "रिफंड ट्रांसफर जारी है")}</b><small>{paid ? tr("Payment reference 4268•••914", "भुगतान संदर्भ 4268•••914") : tr("This page updates automatically", "यह पेज अपने-आप अपडेट होगा")}</small></span></div>
               </div>
               <BottomActions>
-                {!paid && <button className="primary-button" disabled={retrying} onClick={() => { setRetrying(true); window.setTimeout(() => { setPaid(true); setRetrying(false); }, 900); }}>{retrying ? tr("Checking payment status…", "भुगतान की स्थिति जाँची जा रही है…") : tr("Complete payment", "भुगतान पूरा करें")}<Icon name="arrow" /></button>}
-                <button className="secondary-button" onClick={() => reset()}>{tr("Start another ticket", "दूसरी टिकट शुरू करें")}</button>
+                {!paid && <button className="primary-button" disabled>{retrying ? tr("Sending refund…", "रिफंड भेजा जा रहा है…") : tr("Checking refund status…", "रिफंड की स्थिति जाँची जा रही है…")}</button>}
+                {paid && <button className="secondary-button" onClick={() => reset()}>{tr("Start another ticket", "दूसरी टिकट शुरू करें")}</button>}
               </BottomActions>
             </div>
           )}

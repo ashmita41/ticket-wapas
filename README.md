@@ -4,6 +4,8 @@ A competition prototype for remote refunds when an Indian railway paper counter-
 
 The product demonstrates ticket capture, automatic PRS/UTS classification, field confirmation, rules-based eligibility, ticket-possession verification, payout selection and refund tracking. The synthetic train-specific UTS sample completes the special-cancellation journey without inventing a booking-mobile OTP; an ordinary route-based UTS ticket is safely sent for an alternate-service check.
 
+The primary refund journey remains login-free. Citizens can optionally use the simulated sign-in at `/status` to reopen their synthetic refund history. A separate read-only `/authority` dashboard demonstrates how authorised staff could view applications and statuses without placing an admin panel inside the citizen journey.
+
 ## Run locally
 
 ```bash
@@ -28,6 +30,8 @@ The extraction route uses the OpenAI Responses API with image input, a strict JS
 - General/UTS ticket: uses its alphanumeric UTS number and original-ticket possession, never a PNR or booking mobile
 - Unreadable ticket: manual correction before lookup
 - Payment retry: locked claim survives gateway timeout
+- Returning citizen: sample mobile + demo OTP opens refund history and detailed status
+- Authority operations: filter and inspect a read-only synthetic application queue
 
 All ticket, OTP, identity, railway, and payment data in the prototype is synthetic and explicitly labelled as simulated.
 

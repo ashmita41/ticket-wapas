@@ -290,6 +290,12 @@ Use UX4G/GIGW patterns:
 
 Do not use the State emblem, Indian Railways logo, official-looking approval seals or wording that suggests operation by Government.
 
+### Returning citizens and authority operations
+
+Starting a refund should remain login-free. After a claim exists, a citizen may optionally sign in using a booking/reachable mobile and OTP, then view only their own references, amounts, destinations and status timelines. The prototype uses a visible sample mobile and demo OTP; production would need authorised identity binding, short-lived sessions, rate limits, recovery and consent/audit controls.
+
+The authority interface must be a separate role-based surface, never part of the primary citizen form. It should expose the minimum operational fields needed to triage applications: claim reference, masked ticket identifier, route, amount, eligibility reason, ownership outcome, duplicate check, payment state and audit history. Ticket images, full mobile numbers and full payment details should be hidden by default. The current dashboard is a read-only synthetic demonstration and performs no government-system action.
+
 ## 10. Questions judges may ask
 
 ### Does every counter ticket have a PNR?

@@ -487,6 +487,7 @@ export default function TicketWapas() {
           <span className="brand-copy"><b>TICKET WAPAS</b><small>टिकट वापस · CITIZEN REFUND SERVICE</small></span>
         </button>
         <div className="header-actions">
+          <a className="account-link" href="/status">{tr("Sign in", "साइन इन")}</a>
           <div className="language-toggle" role="group" aria-label="Choose language">
             <button className={lang === "en" ? "active" : ""} onClick={() => setLang("en")}>EN</button>
             <button className={lang === "hi" ? "active" : ""} onClick={() => setLang("hi")}>हिं</button>
@@ -763,7 +764,7 @@ export default function TicketWapas() {
       <footer className="site-footer">
         <b>Ticket Wapas · टिकट वापस</b>
         <span>{tr("Independent civic-tech prototype. Not affiliated with or operated by Indian Railways, IRCTC, or the Government of India.", "स्वतंत्र नागरिक-तकनीक प्रोटोटाइप। भारतीय रेल, IRCTC या भारत सरकार से संबद्ध या उनके द्वारा संचालित नहीं।")}</span>
-        <span>{tr("No real tickets, identities, OTPs, payments, or government systems are used.", "कोई असली टिकट, पहचान, OTP, भुगतान या सरकारी सिस्टम इस्तेमाल नहीं होता।")}</span>
+        <span>{tr("No real tickets, identities, OTPs, payments, or government systems are used.", "कोई असली टिकट, पहचान, OTP, भुगतान या सरकारी सिस्टम इस्तेमाल नहीं होता।")} <a href="/authority">{tr("Authority demo", "प्राधिकरण डेमो")}</a></span>
       </footer>
 
     </main>

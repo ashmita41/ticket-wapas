@@ -120,6 +120,33 @@ test("server-renders the Ticket Wapas prototype", async () => {
   assert.doesNotMatch(html, /Your site is taking shape|Building your site/);
 });
 
+test("server-renders a simulated citizen sign-in for later refund tracking", async () => {
+  const app = await worker();
+  const response = await app.fetch(new Request("http://localhost/status", { headers: { accept: "text/html" } }), env, context);
+
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /Sign in to track your refund/);
+  assert.match(html, /Use sample number 98765 42714/);
+  assert.match(html, /No password is needed/);
+  assert.match(html, /Simulated sign-in/);
+  assert.match(html, /do not enter your real mobile number/i);
+});
+
+test("server-renders the separate read-only authority queue", async () => {
+  const app = await worker();
+  const response = await app.fetch(new Request("http://localhost/authority", { headers: { accept: "text/html" } }), env, context);
+
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /Refund applications/);
+  assert.match(html, /Read-only synthetic queue/);
+  assert.match(html, /No government system connected/);
+  assert.match(html, /TW-UTS-HELP-219/);
+  assert.match(html, /NEEDS REVIEW/);
+  assert.match(html, /Masked synthetic destination only/);
+});
+
 test("keeps secrets server-side and ships the social preview", async () => {
   const [page, route, client] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
@@ -153,6 +180,8 @@ test("keeps secrets server-side and ships the social preview", async () => {
   assert.match(client, /One more check is needed/i);
   assert.match(client, /UTS REFERENCE TW-UTS-HELP-219/i);
   assert.match(client, /No refund was started/i);
+  assert.match(client, /href="\/status"/i);
+  assert.match(client, /Authority demo/i);
   assert.match(client, /How we check a refund/i);
   assert.match(client, /DIGITAL TICKET SURRENDER · SIMULATED/i);
   assert.match(client, /Take a one-time surrender photo/i);

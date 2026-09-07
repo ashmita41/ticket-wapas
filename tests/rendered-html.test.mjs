@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { access, readFile } from "node:fs/promises";
 import test from "node:test";
+import ts from "typescript";
 
 const root = new URL("../", import.meta.url);
 
@@ -27,9 +28,8 @@ function extractedTicket(overrides = {}) {
     date: "2026-08-24",
     origin: "New Delhi",
     destination: "Dibrugarh",
-    passengers: 2,
+    passengers: 1,
     fare: 4860,
-    mobile: null,
     confidence: {
       pnr: "extracted",
       utsNumber: "missing",
@@ -57,7 +57,6 @@ function extractedUtsTicket(overrides = {}) {
     destination: "Dehradun",
     passengers: 1,
     fare: 165,
-    mobile: null,
     confidence: {
       pnr: "missing",
       utsNumber: "extracted",
@@ -100,6 +99,25 @@ function syntheticUpload(clientId) {
   });
 }
 
+async function mockRefundService() {
+  const source = await readFile(new URL("../app/mock-refund-service.ts", import.meta.url), "utf8");
+  const compiled = ts.transpileModule(source, {
+    compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
+  }).outputText;
+  const moduleUrl = `data:text/javascript;base64,${Buffer.from(compiled).toString("base64")}#${Math.random()}`;
+  return import(moduleUrl);
+}
+
+function memoryWindow() {
+  const values = new Map();
+  return {
+    localStorage: {
+      getItem(key) { return values.get(key) ?? null; },
+      setItem(key, value) { values.set(key, String(value)); },
+    },
+  };
+}
+
 test("server-renders the Ticket Wapas prototype", async () => {
   const app = await worker();
   const response = await app.fetch(new Request("http://localhost/", { headers: { accept: "text/html" } }), env, context);
@@ -109,12 +127,14 @@ test("server-renders the Ticket Wapas prototype", async () => {
 
   const html = await response.text();
   assert.match(html, /<title>Ticket Wapas/);
-  assert.match(html, /Train cancelled\? Refund your paper ticket/);
-  assert.match(html, /Start refund journey/);
-  assert.match(html, /Original paper ticket/);
+  assert.match(html, /Train cancelled\? Get your counter-ticket refund without returning to the station/);
+  assert.match(html, /Take or upload ticket photo/);
+  assert.match(html, /Enter ticket details/);
+  assert.match(html, /Original PRS paper ticket/);
+  assert.match(html, /Booking mobile/);
   assert.match(html, /CITIZEN REFUND SERVICE/);
   assert.match(html, /Service information/);
-  assert.match(html, /Guided citizen service/);
+  assert.match(html, /For a train cancelled by Railways/);
   assert.match(html, /Independent prototype using synthetic data/i);
   assert.match(html, /Not affiliated with Indian Railways, IRCTC or the Government of India/);
   assert.doesNotMatch(html, /Independent prototype · Synthetic data only · No real refund/i);
@@ -169,21 +189,23 @@ test("server-renders public service details with process and sources", async () 
 
   assert.equal(response.status, 200);
   const html = await response.text();
-  assert.match(html, /How the counter-ticket refund journey works/);
+  assert.match(html, /A cancelled train should not create another station journey/);
   assert.match(html, /7\.18 crore/);
   assert.match(html, /11% of 65\.08 crore/);
   assert.match(html, /booking volume, not the number of cancellations or refund claims/i);
-  assert.match(html, /RESERVED · PRS/);
-  assert.match(html, /GENERAL \/ UNRESERVED · UTS/);
+  assert.match(html, /PRIMARY · RESERVED PRS/);
+  assert.match(html, /SEPARATE · GENERAL \/ UTS/);
+  assert.match(html, /The photo is not the surrender/);
   assert.match(html, /Railway and Government sources/);
   assert.match(html, /Ministry of Railways source/);
 });
 
 test("keeps secrets server-side and ships the social preview", async () => {
-  const [page, route, client] = await Promise.all([
+  const [page, route, client, mockService] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/api/extract-ticket/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/ticket-wapas.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/mock-refund-service.ts", import.meta.url), "utf8"),
     access(new URL("public/og-ticket-wapas.png", root)),
   ]);
 
@@ -196,33 +218,43 @@ test("keeps secrets server-side and ships the social preview", async () => {
   assert.doesNotMatch(client, /OPENAI_API_KEY|Bearer sk-/);
   assert.match(client, /We check for an existing refund first/i);
   assert.match(client, /useState\(false\)/);
-  assert.match(client, /Confirm and send ₹/i);
-  assert.match(client, /Your refund is being sent/i);
+  assert.match(client, /Confirm ₹/i);
+  assert.match(client, /refund instruction is being processed/i);
   assert.doesNotMatch(client, /Complete payment/i);
   assert.match(client, /Every field is editable, and you stay in control/i);
   assert.match(client, /type="date"/i);
   assert.match(client, /I checked the PNR, train number and journey date/i);
   assert.match(client, /Edit ticket details/i);
   assert.match(client, /I no longer have access to this number/i);
-  assert.match(client, /ASSISTED VERIFICATION/i);
+  assert.match(client, /ASSISTED REVIEW/i);
   assert.match(client, /HELP REFERENCE TW-HELP-2714/i);
   assert.match(client, /Take or upload ticket photo/i);
-  assert.match(client, /UNRESERVED UTS · SYNTHETIC/i);
   assert.match(client, /Unreserved UTS ticket found/i);
   assert.match(client, /This ticket has a UTS number instead of a PNR/i);
-  assert.match(client, /UTS SPECIAL CANCELLATION/i);
-  assert.match(client, /No booking-mobile OTP used/i);
-  assert.match(client, /UTS CANCELLATION RECEIPT TW-UTS-824/i);
-  assert.match(client, /One more check is needed/i);
+  assert.match(client, /SEPARATE UTS ROUTE/i);
+  assert.match(client, /We do not apply the PRS refund promise to them/i);
+  assert.match(client, /A General \/ UTS ticket needs a different check/i);
   assert.match(client, /UTS REFERENCE TW-UTS-HELP-219/i);
   assert.match(client, /No refund was started/i);
   assert.match(client, /href="\/status"/i);
   assert.match(client, /Authority view/i);
-  assert.match(client, /How we check a refund/i);
-  assert.match(client, /DIGITAL TICKET SURRENDER/i);
-  assert.match(client, /Take a one-time surrender photo/i);
-  assert.match(client, /Cancel ticket digitally/i);
-  assert.match(client, /DIGITAL SURRENDER RECEIPT TW-DS-824/i);
+  assert.match(client, /Fixed service rules—not AI/i);
+  assert.match(client, /REMOTE SURRENDER · PROPOSED/i);
+  assert.match(client, /Take a one-time possession photo/i);
+  assert.match(client, /It does not by itself surrender or invalidate the paper ticket/i);
+  assert.match(client, /Record remote surrender/i);
+  assert.match(client, /REMOTE SURRENDER RECEIPT/i);
+  assert.match(client, /A real service would need an approved PRS integration/i);
+  assert.match(client, /No duplicate created/i);
+  assert.match(client, /The simulated PRS record—not the ticket photo—returned/i);
+  assert.match(mockService, /getPrsTicketRecord/);
+  assert.match(mockService, /getFinalCancellationEvent/);
+  assert.match(mockService, /verifyBookingMobile/);
+  assert.match(mockService, /recordRemoteSurrender/);
+  assert.match(mockService, /createRefundInstruction/);
+  assert.match(mockService, /PRS:\$\{record\.pnr\}:\$\{record\.journeyDate\}:\$\{event\.id\}/);
+  assert.match(mockService, /remote_surrender_recorded/);
+  assert.match(mockService, /refund_instructed/);
   assert.doesNotMatch(client, /Authorised pickup|PRS counter handover|TW-HO-824/i);
   assert.match(client, /Cash at PRS counter/i);
   assert.match(client, /Independent prototype using synthetic data/i);
@@ -233,6 +265,7 @@ test("keeps secrets server-side and ships the social preview", async () => {
   assert.match(client, /रिफंड शुरू करने के लिए तैयार/);
   assert.doesNotMatch(client, /JUDGE CONTROLS|Test the real edge cases|Demo: Happy path|judge-ready/i);
   assert.doesNotMatch(client, /Idempotency key|tokenised|claim key|payment rail|Deterministic eligibility|fixed product rules|PNR \+ journey \+ claim type/i);
+  assert.doesNotMatch(route, /mobile:\s*\{/i);
 });
 
 test("keeps the completed citizen journey consistent with refund status", async () => {
@@ -248,6 +281,51 @@ test("keeps the completed citizen journey consistent with refund status", async 
   assert.match(status, /claimRecords\.map/);
   assert.match(claims, /ticket-wapas\.sample-claims\.v1/);
   assert.match(claims, /filter\(isSampleClaim\)/);
+});
+
+test("remote surrender is deterministic, persistent and safe to retry", async () => {
+  const originalWindow = globalThis.window;
+  globalThis.window = memoryWindow();
+  try {
+    const service = await mockRefundService();
+    const record = service.getPrsTicketRecord("2468135790", "12424", "2026-08-24");
+    assert.ok(record);
+    assert.equal(record.passengerCount, 1);
+    assert.equal(record.linkedMobileMasked, "+91 •••••• 2714");
+    assert.equal(record.originalPayment.kind, "cash");
+
+    const cancellation = service.getFinalCancellationEvent(record);
+    assert.equal(cancellation.status, "final_cancelled");
+    assert.equal(service.verifyBookingMobile(record, "000000").reason, "incorrect_code");
+    assert.equal(service.verifyBookingMobile(record, "271406").ok, true);
+
+    const first = service.recordRemoteSurrender({ record, cancellationEvent: cancellation, otpVerified: true, possessionConfirmed: true, consentGiven: true });
+    const duplicate = service.recordRemoteSurrender({ record, cancellationEvent: cancellation, otpVerified: true, possessionConfirmed: true, consentGiven: true });
+    assert.equal(first.reused, false);
+    assert.equal(duplicate.reused, true);
+    assert.equal(duplicate.receipt.reference, first.receipt.reference);
+
+    const destination = { kind: "upi", maskedLabel: "UPI · asha.rail@okaxis", beneficiaryName: "Asha P.", nameMatched: true };
+    const instructed = service.createRefundInstruction(first.receipt, destination);
+    const retriedInstruction = service.createRefundInstruction(first.receipt, destination);
+    assert.equal(instructed.receipt.status, "refund_instructed");
+    assert.equal(retriedInstruction.reused, true);
+    const paid = service.markRefundPaid(instructed.receipt);
+    assert.equal(service.getExistingRemoteSurrender(record, cancellation).status, "paid");
+    assert.equal(paid.paymentReference, "4268•••914");
+
+    const noMobile = service.getPrsTicketRecord("7351902468", "12958", "2026-08-24");
+    assert.equal(service.verifyBookingMobile(noMobile, "271406").reason, "no_booking_mobile");
+    const multiPassenger = service.getPrsTicketRecord("6193048275", "12310", "2026-08-24");
+    assert.equal(multiPassenger.passengerCount, 2);
+    const posPaid = service.getPrsTicketRecord("9911223344", "12002", "2026-08-24");
+    assert.equal(posPaid.originalPayment.kind, "pos");
+    const restored = service.getPrsTicketRecord("8844001122", "12230", "2026-08-24");
+    assert.equal(service.getFinalCancellationEvent(restored).status, "restored");
+  } finally {
+    if (originalWindow === undefined) delete globalThis.window;
+    else globalThis.window = originalWindow;
+  }
 });
 
 test("returns a safe manual fallback when AI extraction is not configured", async () => {

@@ -21,7 +21,6 @@ const ticketSchema = {
     "destination",
     "passengers",
     "fare",
-    "mobile",
     "confidence",
   ],
   properties: {
@@ -41,7 +40,6 @@ const ticketSchema = {
     destination: { type: ["string", "null"] },
     passengers: { type: ["integer", "null"] },
     fare: { type: ["number", "null"], description: "Total fare in Indian rupees, without a currency symbol." },
-    mobile: { type: ["string", "null"], description: "Masked booking mobile only if visibly printed." },
     confidence: {
       type: "object",
       additionalProperties: false,
@@ -176,7 +174,7 @@ export async function POST(request: Request) {
           content: [
             {
               type: "input_text",
-              text: "First classify the image. A physical reserved Indian Railways counter ticket with a 10-digit PNR is prs_counter_ticket. A physical unreserved/general counter ticket with an alphanumeric UTS number and no PNR is uts_counter_ticket. E-tickets, phone screenshots, IDs, receipts, forms, scenery, people and unrelated images are not_ticket. If the ticket type cannot be confirmed, set documentType to unclear and abstain. For a visible physical counter ticket, extract only facts visibly printed on it. Put the reserved identifier in pnr or the unreserved identifier in utsNumber and leave the other null. An ordinary UTS ticket may have no train number; never invent one. Never infer a missing value. Return the journey date only as YYYY-MM-DD; otherwise return null. Mark every key field as extracted, unclear, or missing. Do not determine cancellation status, refund eligibility, identity or refund amount.",
+              text: "First classify the image. A physical reserved Indian Railways counter ticket with a 10-digit PNR is prs_counter_ticket. A physical unreserved/general counter ticket with an alphanumeric UTS number and no PNR is uts_counter_ticket. E-tickets, phone screenshots, IDs, receipts, forms, scenery, people and unrelated images are not_ticket. If the ticket type cannot be confirmed, set documentType to unclear and abstain. For a visible physical counter ticket, extract only facts visibly printed on it. Put the reserved identifier in pnr or the unreserved identifier in utsNumber and leave the other null. An ordinary UTS ticket may have no train number; never invent one. Never infer a missing value. Return the journey date only as YYYY-MM-DD; otherwise return null. Mark every key field as extracted, unclear, or missing. Do not determine cancellation status, refund eligibility, identity, ownership, booking contact information or refund amount.",
             },
             { type: "input_image", image_url: dataUrl, detail: "high" },
           ],

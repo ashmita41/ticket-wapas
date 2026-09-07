@@ -13,8 +13,8 @@ export type SampleClaim = {
 export const SAMPLE_CLAIMS_STORAGE_KEY = "ticket-wapas.sample-claims.v1";
 
 export const fallbackSampleClaims: SampleClaim[] = [
-  { id: "TW-UTS-613", ticket: "UTS7A4K219", route: "New Delhi → Dehradun", amount: 165, status: "paid", updated: "27 Aug 2026 · 12:18 PM", destination: "UPI · asha.rail@okaxis" },
-  { id: "TW-824-613", ticket: "PNR 2468135790", route: "New Delhi → Dibrugarh", amount: 4860, status: "processing", updated: "27 Aug 2026 · 11:04 AM", destination: "Bank account · •••• 1842" },
+  { id: "TW-RS-824", ticket: "PNR 2468135790", route: "New Delhi → Dibrugarh", amount: 4860, status: "paid", updated: "07 Sep 2026 · 6:18 PM", destination: "UPI · asha.rail@okaxis" },
+  { id: "TW-HELP-2714", ticket: "PNR 7351902468", route: "Jaipur → Ahmedabad", amount: 1280, status: "processing", updated: "07 Sep 2026 · 5:04 PM", destination: "Assisted review pending" },
 ];
 
 function isSampleClaim(value: unknown): value is SampleClaim {

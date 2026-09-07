@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Ticket Wapas — Citizen Refund Service Prototype",
-  description: "An independent public-service prototype for cancelled reserved PRS and unreserved UTS counter-ticket refunds using synthetic data and mocked systems.",
+  description: "A cancelled train should not force a PRS counter-ticket passenger to return to the station just to receive a refund.",
   icons: { icon: "/favicon.svg" },
 };
 

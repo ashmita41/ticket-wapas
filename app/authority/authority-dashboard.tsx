@@ -20,7 +20,7 @@ type Application = {
 
 const applications: Application[] = [
   { id: "TW-UTS-613", ticket: "UTS7A4K219", type: "UTS", route: "New Delhi → Dehradun", amount: 165, status: "paid", updated: "12:18 PM", reason: "Train-specific UTS special cancellation", ownership: "Original-ticket possession photo matched" },
-  { id: "TW-824-613", ticket: "PNR 2468135790", type: "PRS", route: "New Delhi → Dibrugarh", amount: 4860, status: "approved", updated: "11:04 AM", reason: "Railway-cancelled reserved service", ownership: "Booking mobile and ticket possession matched" },
+  { id: "TW-RS-824", ticket: "PNR 2468135790", type: "PRS", route: "New Delhi → Dibrugarh", amount: 4860, status: "approved", updated: "11:04 AM", reason: "Final train cancellation confirmed", ownership: "Booking mobile, possession and proposed remote surrender recorded" },
   { id: "TW-UTS-HELP-219", ticket: "UTS9B2C314", type: "UTS", route: "Delhi Jn → Ghaziabad", amount: 60, status: "review", updated: "10:52 AM", reason: "Alternate-service availability needs review", ownership: "Original-ticket possession pending" },
   { id: "TW-HELP-2714", ticket: "PNR 7351902468", type: "PRS", route: "Jaipur → Ahmedabad", amount: 1280, status: "review", updated: "10:33 AM", reason: "Booking mobile no longer available", ownership: "Assisted verification requested" },
   { id: "TW-NEW-184", ticket: "PNR 6193048275", type: "PRS", route: "Patna → New Delhi", amount: 2145, status: "new", updated: "10:21 AM", reason: "Cancellation record found", ownership: "Citizen confirmation received" },
